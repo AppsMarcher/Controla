@@ -10,6 +10,12 @@ function isRecoveryFlow() {
   return /(?:^|[?#&])type=recovery(?:&|$)/.test(raw);
 }
 
+function getRecoveryRedirectUrl() {
+  const { protocol, origin, pathname } = window.location;
+  if (protocol !== 'http:' && protocol !== 'https:') return null;
+  return origin + pathname;
+}
+
 function setPasswordToggle(toggleId, inputId) {
   const toggle = document.getElementById(toggleId);
   const input = document.getElementById(inputId);
@@ -65,13 +71,13 @@ function showLogin() {
         }
         forgotBtn.disabled = true;
         try {
-          const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + window.location.pathname
-          });
+          const redirectTo = getRecoveryRedirectUrl();
+          const options = redirectTo ? { redirectTo } : undefined;
+          const { error } = await supabase.auth.resetPasswordForEmail(email, options);
           if (error) throw error;
           err.textContent = 'Enviamos um link de redefinicao para seu e-mail.';
         } catch (e) {
-          err.textContent = 'Nao foi possivel enviar o e-mail de recuperacao.';
+          err.textContent = e?.message || 'Nao foi possivel enviar o e-mail de recuperacao.';
         } finally {
           forgotBtn.disabled = false;
         }
