@@ -107,6 +107,15 @@ export async function inviteUserRemote(email, perfil) {
 }
 
 export async function logout() {
-  if (USE_SUPABASE) await supabase.auth.signOut();
-  location.reload();
+  if (USE_SUPABASE) {
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    if (error) throw new Error('Falha ao encerrar a sessao: ' + error.message);
+  }
+  try {
+    sessionStorage.clear();
+  } catch (e) { /* ignora */ }
+  try {
+    localStorage.removeItem('controla_user');
+  } catch (e) { /* ignora */ }
+  window.location.href = window.location.origin + window.location.pathname;
 }

@@ -1559,7 +1559,11 @@ function abrirAreaUsuario() {
 }
 
 async function logoutUsuario() {
-  await logout();
+  try {
+    await logout();
+  } catch (e) {
+    toast(e.message || 'Falha ao sair do sistema.', 'error');
+  }
 }
 
 async function salvarUsuario() {
