@@ -5,10 +5,35 @@ import { supabase } from './data/client.js';
 
 const PROFILE_FIELDS = 'id, nome, sobrenome, celular, email, foto, perfil, created_at';
 
+function isRecoveryFlow() {
+  const raw = window.location.hash + '&' + window.location.search;
+  return /(?:^|[?#&])type=recovery(?:&|$)/.test(raw);
+}
+
+function setPasswordToggle(toggleId, inputId) {
+  const toggle = document.getElementById(toggleId);
+  const input = document.getElementById(inputId);
+  const eyeOpen = toggle?.querySelector('.eye-open');
+  const eyeClosed = toggle?.querySelector('.eye-closed');
+  if (!toggle || !input || toggle.dataset.bound) return;
+  toggle.dataset.bound = '1';
+  toggle.addEventListener('click', () => {
+    const visible = input.type === 'text';
+    input.type = visible ? 'password' : 'text';
+    toggle.setAttribute('aria-label', visible ? 'Mostrar senha' : 'Ocultar senha');
+    toggle.setAttribute('title', visible ? 'Mostrar senha' : 'Ocultar senha');
+    if (eyeOpen) eyeOpen.hidden = !visible;
+    if (eyeClosed) eyeClosed.hidden = visible;
+  });
+}
+
 export async function ensureAuth() {
   if (!USE_SUPABASE) return null;
 
   const { data } = await supabase.auth.getSession();
+  if (isRecoveryFlow()) {
+    return await showRecovery(data.session?.user || null);
+  }
   if (data.session) return data.session.user;
 
   return await showLogin();
@@ -18,38 +43,112 @@ function showLogin() {
   return new Promise((resolve) => {
     const overlay = document.getElementById('loginOverlay');
     const form = document.getElementById('loginForm');
+    const loginMode = document.getElementById('loginMode');
+    const recoveryMode = document.getElementById('recoveryMode');
     const err = document.getElementById('loginErr');
     const btn = document.getElementById('loginBtn');
-    const passInput = document.getElementById('loginPass');
-    const passToggle = document.getElementById('loginPassToggle');
-    const eyeOpen = passToggle?.querySelector('.eye-open');
-    const eyeClosed = passToggle?.querySelector('.eye-closed');
+    const forgotBtn = document.getElementById('forgotPasswordBtn');
     overlay.style.display = 'flex';
+    if (loginMode) loginMode.style.display = '';
+    if (recoveryMode) recoveryMode.style.display = 'none';
 
-    if (passToggle && passInput && !passToggle.dataset.bound) {
-      passToggle.dataset.bound = '1';
-      passToggle.addEventListener('click', () => {
-        const visible = passInput.type === 'text';
-        passInput.type = visible ? 'password' : 'text';
-        passToggle.setAttribute('aria-label', visible ? 'Mostrar senha' : 'Ocultar senha');
-        passToggle.setAttribute('title', visible ? 'Mostrar senha' : 'Ocultar senha');
-        if (eyeOpen) eyeOpen.hidden = !visible;
-        if (eyeClosed) eyeClosed.hidden = visible;
+    setPasswordToggle('loginPassToggle', 'loginPass');
+
+    if (forgotBtn && !forgotBtn.dataset.bound) {
+      forgotBtn.dataset.bound = '1';
+      forgotBtn.addEventListener('click', async () => {
+        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+        err.textContent = '';
+        if (!email) {
+          err.textContent = 'Informe seu e-mail para receber o link de recuperacao.';
+          return;
+        }
+        forgotBtn.disabled = true;
+        try {
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + window.location.pathname
+          });
+          if (error) throw error;
+          err.textContent = 'Enviamos um link de redefinicao para seu e-mail.';
+        } catch (e) {
+          err.textContent = 'Nao foi possivel enviar o e-mail de recuperacao.';
+        } finally {
+          forgotBtn.disabled = false;
+        }
       });
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      err.textContent = '';
-      btn.disabled = true;
-      const email = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPass').value;
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      btn.disabled = false;
-      if (error) { err.textContent = 'E-mail ou senha invalidos.'; return; }
-      overlay.style.display = 'none';
-      resolve(data.user);
-    });
+    if (!form.dataset.loginBound) {
+      form.dataset.loginBound = '1';
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (recoveryMode && recoveryMode.style.display !== 'none') return;
+        err.textContent = '';
+        btn.disabled = true;
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPass').value;
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        btn.disabled = false;
+        if (error) { err.textContent = 'E-mail ou senha invalidos.'; return; }
+        overlay.style.display = 'none';
+        resolve(data.user);
+      });
+    } else {
+      form._resolveLogin = resolve;
+    }
+    form._resolveLogin = resolve;
+  });
+}
+
+function showRecovery(userFromSession) {
+  return new Promise((resolve, reject) => {
+    const overlay = document.getElementById('loginOverlay');
+    const form = document.getElementById('loginForm');
+    const loginMode = document.getElementById('loginMode');
+    const recoveryMode = document.getElementById('recoveryMode');
+    const err = document.getElementById('recoveryErr');
+    const btn = document.getElementById('recoveryBtn');
+    const pass = document.getElementById('recoveryPass');
+    const confirm = document.getElementById('recoveryPassConfirm');
+
+    overlay.style.display = 'flex';
+    if (loginMode) loginMode.style.display = 'none';
+    if (recoveryMode) recoveryMode.style.display = '';
+    if (err) err.textContent = '';
+
+    setPasswordToggle('recoveryPassToggle', 'recoveryPass');
+    setPasswordToggle('recoveryPassConfirmToggle', 'recoveryPassConfirm');
+
+    if (!btn.dataset.bound) {
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', async () => {
+        err.textContent = '';
+        const senha = pass.value;
+        const confirmar = confirm.value;
+        if (!senha || senha.length < 6) {
+          err.textContent = 'A nova senha deve ter pelo menos 6 caracteres.';
+          return;
+        }
+        if (senha !== confirmar) {
+          err.textContent = 'A confirmacao da senha nao confere.';
+          return;
+        }
+        btn.disabled = true;
+        try {
+          const { data, error } = await supabase.auth.updateUser({ password: senha });
+          if (error) throw error;
+          window.history.replaceState({}, '', window.location.pathname);
+          overlay.style.display = 'none';
+          resolve(data.user || userFromSession);
+        } catch (e) {
+          err.textContent = 'Nao foi possivel atualizar a senha.';
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+
+    form._resolveLogin = resolve;
   });
 }
 
