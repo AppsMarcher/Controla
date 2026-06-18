@@ -326,13 +326,14 @@ tr.emrg-row:hover td{background:#F6CED3}
 .login-card input:focus{border-color:var(--vermelho)}
 .login-link-row{
   display:flex;
-  justify-content:flex-end;
   width:100%;
   margin-top:-6px;
   margin-bottom:4px;
+  text-align:right;
 }
 .login-link{
   display:inline-block;
+  margin-left:auto;
   border:none;
   background:#fff;
   color:var(--vermelho);
