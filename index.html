@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controla Marcher - Controle de Portaria</title>
-  <link rel="icon" href="/controla-logo.png">
-  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="icon" href="./public/controla-logo.png">
+  <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
 
 <div id="loginOverlay" class="login-overlay" style="display:none">
   <form id="loginForm" class="login-card" autocomplete="on">
-    <img class="login-logo" src="/controla-logo2.png" alt="Controla Marcher">
+    <img class="login-logo" src="./public/controla-logo2.png" alt="Controla Marcher">
     <div class="login-sub">Acesso restrito - entre com suas credenciais</div>
     <label>E-mail<input id="loginEmail" type="email" required autocomplete="username"></label>
     <label>Senha<input id="loginPass" type="password" required autocomplete="current-password"></label>
@@ -23,7 +23,7 @@
 <header>
   <button id="menuToggle" aria-label="Abrir menu">☰</button>
   <div class="brand">
-    <img class="brand-logo" src="/controla-logo.png" alt="Controla Marcher Brasil" title="Ir para o inicio" role="button" tabindex="0" onclick="showView('dashboard')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showView('dashboard');}">
+    <img class="brand-logo" src="./public/controla-logo.png" alt="Controla Marcher Brasil" title="Ir para o inicio" role="button" tabindex="0" onclick="showView('dashboard')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showView('dashboard');}">
   </div>
   <div class="header-search">
     <div class="search-wrap">
@@ -309,6 +309,13 @@
 
 <div id="toastBox"></div>
 
-<script type="module" src="/src/main.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+  }
+}
+</script>
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>
