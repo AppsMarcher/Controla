@@ -331,15 +331,17 @@ tr.emrg-row:hover td{background:#F6CED3}
   width:100%;
 }
 .login-link{
-  display:inline-block;
-  align-self:flex-end;
+  display:block;
+  width:100%;
+  align-self:stretch;
   border:none;
-  background:#fff;
+  background:transparent;
   color:var(--vermelho);
   font-size:.75rem;
   font-weight:700;
   padding:0;
   margin-top:4px;
+  text-align:right;
   text-transform:none;
   letter-spacing:0;
   line-height:1.2;
