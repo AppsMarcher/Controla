@@ -2102,10 +2102,12 @@ export function setUsuario(u) {
 }
 export function renderApp() { renderUserCard(); renderAll(); }
 export function applyRole(perfil) {
-  ROLE = perfil || 'Consultas';
+  // Só 'Administrador' e 'Segurança' são reconhecidos; qualquer outro valor
+  // (typo, null, papel legado) cai em 'Consultas' — o mais restritivo.
+  ROLE = (perfil === 'Administrador' || perfil === 'Segurança') ? perfil : 'Consultas';
   document.body.classList.remove('role-seguranca', 'role-consultas');
   if (ROLE === 'Segurança') document.body.classList.add('role-seguranca');
-  if (ROLE === 'Consultas') document.body.classList.add('role-consultas');
+  else if (ROLE !== 'Administrador') document.body.classList.add('role-consultas');
 }
 
 
