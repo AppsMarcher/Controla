@@ -52,6 +52,7 @@ function canQuickSaveCadastros() { return canWriteCadastros(); }
 function canWriteOperacao() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA; }
 function canAccessReports() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_CONSULTA; }
 function canManageRamais() { return isSuperAdmin() || isAdmin(); }
+function canFavoriteRamais() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA; }
 function getAssignableRoles() {
   return isSuperAdmin()
     ? PERFIS_ACESSO.slice()
@@ -1926,7 +1927,7 @@ function excluirVeiculo(id) {
 }
 
 function toggleEmergencia(id) {
-  if (!ensureAllowed(canManageRamais(), 'Somente Admin e Super Admin podem alterar contatos de emergencia.')) return;
+  if (!ensureAllowed(canFavoriteRamais(), 'Seu perfil nao pode favoritar contatos.')) return;
   const r = DB.ramais.find(x => x.id === id);
   if (!r) return;
   r.emergencia = !r.emergencia;
@@ -1982,7 +1983,7 @@ function renderRamais() {
   rows.forEach(r => {
     const tel = (r.celular || '').replace(/[^0-9+]/g, '');
     html += '<tr class="' + (r.emergencia ? 'emrg-row' : '') + '">' +
-      '<td>' + (canManageRamais()
+      '<td>' + (canFavoriteRamais()
         ? '<button class="star-btn' + (r.emergencia ? ' on' : '') + '" title="' + (r.emergencia ? 'Remover de emergencia' : 'Marcar como contato de emergencia') + '" onclick="toggleEmergencia(\'' + r.id + '\')">' + (r.emergencia ? '★' : '☆') + '</button>'
         : (r.emergencia ? '★' : '')) + '</td>' +
       '<td><strong>' + esc(r.setor) + '</strong></td><td class="mono">' + esc(r.ramal || '—') + '</td>' +
