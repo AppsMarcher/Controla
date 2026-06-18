@@ -22,6 +22,8 @@ function showLogin() {
     const btn = document.getElementById('loginBtn');
     const passInput = document.getElementById('loginPass');
     const passToggle = document.getElementById('loginPassToggle');
+    const eyeOpen = passToggle?.querySelector('.eye-open');
+    const eyeClosed = passToggle?.querySelector('.eye-closed');
     overlay.style.display = 'flex';
 
     if (passToggle && passInput && !passToggle.dataset.bound) {
@@ -31,7 +33,8 @@ function showLogin() {
         passInput.type = visible ? 'password' : 'text';
         passToggle.setAttribute('aria-label', visible ? 'Mostrar senha' : 'Ocultar senha');
         passToggle.setAttribute('title', visible ? 'Mostrar senha' : 'Ocultar senha');
-        passToggle.textContent = visible ? '👁' : '🙈';
+        if (eyeOpen) eyeOpen.hidden = !visible;
+        if (eyeClosed) eyeClosed.hidden = visible;
       });
     }
 
