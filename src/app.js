@@ -7,9 +7,14 @@ import { inviteUserRemote, loadProfilesRemote, logout, saveProfileRemote, update
 import { seedRamais } from './data/seed.js';
 import { deleteManagedPhoto, uploadPhotoIfNeeded } from './data/storage.js';
 
-let ROLE = 'Administrador';
+const ROLE_SUPER_ADMIN = 'Super Admin';
+const ROLE_ADMIN = 'Admin';
+const ROLE_SEGURANCA = 'Seguranca';
+const ROLE_CONSULTA = 'Consulta';
+
+let ROLE = ROLE_SUPER_ADMIN;
 let PERFIS_USUARIOS = [];
-const PERFIS_ACESSO = ['Administrador', 'Segurança', 'Consultas'];
+const PERFIS_ACESSO = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_SEGURANCA, ROLE_CONSULTA];
 
 let DB = {};                 // cache em memória (hidratado em loadData)
 
@@ -26,10 +31,58 @@ function deleteDB(entity, id) {
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
-function isAdmin() { return ROLE === 'Administrador'; }
-function canWriteCadastros() { return isAdmin(); }
-function canQuickSaveCadastros() { return ROLE === 'Administrador' || ROLE === 'Segurança'; }
-function canWriteOperacao() { return ROLE === 'Administrador' || ROLE === 'Segurança'; }
+function roleKey(perfil) {
+  return String(perfil == null ? '' : perfil).trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function normalizeRole(perfil) {
+  const key = roleKey(perfil);
+  if (key === 'super admin' || key === 'superadmin') return ROLE_SUPER_ADMIN;
+  if (key === 'admin') return ROLE_ADMIN;
+  if (key === 'administrador') return ROLE_SUPER_ADMIN;
+  if (key === 'seguranca' || key === 'porteiro') return ROLE_SEGURANCA;
+  if (key === 'consulta' || key === 'consultas') return ROLE_CONSULTA;
+  return ROLE_CONSULTA;
+}
+function isSuperAdmin() { return ROLE === ROLE_SUPER_ADMIN; }
+function isAdmin() { return ROLE === ROLE_ADMIN; }
+function canManageUsers() { return isSuperAdmin() || isAdmin(); }
+function canWriteCadastros() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA; }
+function canQuickSaveCadastros() { return canWriteCadastros(); }
+function canWriteOperacao() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA; }
+function canAccessReports() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_CONSULTA; }
+function canManageRamais() { return isSuperAdmin() || isAdmin(); }
+function getAssignableRoles() {
+  return isSuperAdmin()
+    ? PERFIS_ACESSO.slice()
+    : [ROLE_ADMIN, ROLE_SEGURANCA, ROLE_CONSULTA];
+}
+function canEditUserRole(targetRole) {
+  const role = normalizeRole(targetRole);
+  if (isSuperAdmin()) return true;
+  if (!isAdmin()) return false;
+  return role !== ROLE_SUPER_ADMIN;
+}
+function canAccessView(name) {
+  switch (name) {
+    case 'usuarios':
+      return canManageUsers();
+    case 'relatorios':
+      return canAccessReports();
+    case 'visitantes':
+    case 'motoristas':
+    case 'veiculos':
+    case 'dashboard':
+    case 'entrada':
+    case 'saida':
+    case 'entregas':
+    case 'historico':
+    case 'ramais':
+      return true;
+    default:
+      return false;
+  }
+}
 function ensureAllowed(ok, msg) {
   if (ok) return true;
   toast(msg || 'Seu perfil nao permite esta acao.', 'warn');
@@ -175,6 +228,10 @@ function confirmar(texto, onYes) {
 
 /* ---------- Navegação ---------- */
 function showView(name) {
+  if (!canAccessView(name)) {
+    toast('Seu perfil nao pode acessar esta area.', 'warn');
+    name = 'dashboard';
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const sec = document.getElementById('view-' + name);
   if (sec) sec.classList.add('active');
@@ -510,20 +567,23 @@ function renderVisitantes() {
   let html = '<thead><tr>' +
     thSort('visitantes', 'nome', 'Nome') + thSort('visitantes', 'documento', 'Documento') + thSort('visitantes', 'telefone', 'Telefone') +
     thSort('visitantes', 'empresa', 'Empresa') + thSort('visitantes', 'ativo', 'Status') + thSort('visitantes', 'obs', 'Obs.') +
-    '<th></th></tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="7">Nenhum visitante cadastrado.</td></tr>';
+    (canWriteCadastros() ? '<th></th>' : '') + '</tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteCadastros() ? 7 : 6) + '">Nenhum visitante cadastrado.</td></tr>';
   rows.forEach(v => {
     html += '<tr><td><span class="cell-foto">' + fotoThumb(v.foto, v.nome) + '<strong>' + esc(v.nome) + '</strong></span></td><td class="mono">' + esc(v.documento) + '</td>' +
       '<td>' + esc(v.telefone || '—') + '</td><td>' + esc(v.empresa || '—') + '</td>' +
       '<td>' + (v.ativo ? '<span class="badge b-ativo">Ativo</span>' : '<span class="badge b-inativo">Inativo</span>') + '</td>' +
       '<td>' + esc(v.obs || '—') + '</td>' +
-      '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormVisitante(\'' + v.id + '\')', ICO.edit) +
-      btnIcon('btn-danger', 'Excluir', 'excluirVisitante(\'' + v.id + '\')', ICO.trash) + '</td></tr>';
+      (canWriteCadastros()
+        ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormVisitante(\'' + v.id + '\')', ICO.edit) +
+          btnIcon('btn-danger', 'Excluir', 'excluirVisitante(\'' + v.id + '\')', ICO.trash) + '</td>'
+        : '') + '</tr>';
   });
   document.getElementById('visTable').innerHTML = html + '</tbody>';
 }
 
 function abrirFormVisitante(id) {
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar visitantes.')) return;
   const v = id ? DB.visitantes.find(x => x.id === id) : null;
   abrirModal(v ? 'Editar visitante' : 'Novo visitante',
     '<div class="form-grid">' +
@@ -584,20 +644,23 @@ function renderMotoristas() {
   let html = '<thead><tr>' +
     thSort('motoristas', 'nome', 'Nome') + thSort('motoristas', 'documento', 'CPF/RG/CNH') + thSort('motoristas', 'telefone', 'Telefone') +
     thSort('motoristas', 'transportadora', 'Transportadora') + thSort('motoristas', 'placaPadrao', 'Placa padrão') + thSort('motoristas', 'tipoVeiculo', 'Veículo') +
-    thSort('motoristas', 'obs', 'Obs.') + '<th></th></tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="8">Nenhum motorista cadastrado.</td></tr>';
+    thSort('motoristas', 'obs', 'Obs.') + (canWriteCadastros() ? '<th></th>' : '') + '</tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteCadastros() ? 8 : 7) + '">Nenhum motorista cadastrado.</td></tr>';
   rows.forEach(m => {
     html += '<tr><td><span class="cell-foto">' + fotoThumb(m.foto, m.nome) + '<strong>' + esc(m.nome) + '</strong></span></td><td class="mono">' + esc(m.documento) + '</td>' +
       '<td>' + esc(m.telefone || '—') + '</td><td>' + esc(m.transportadora || '—') + '</td>' +
       '<td class="mono">' + esc(m.placaPadrao || '—') + '</td><td>' + esc(m.tipoVeiculo || '—') + '</td>' +
       '<td>' + esc(m.obs || '—') + '</td>' +
-      '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormMotorista(\'' + m.id + '\')', ICO.edit) +
-      btnIcon('btn-danger', 'Excluir', 'excluirMotorista(\'' + m.id + '\')', ICO.trash) + '</td></tr>';
+      (canWriteCadastros()
+        ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormMotorista(\'' + m.id + '\')', ICO.edit) +
+          btnIcon('btn-danger', 'Excluir', 'excluirMotorista(\'' + m.id + '\')', ICO.trash) + '</td>'
+        : '') + '</tr>';
   });
   document.getElementById('motTable').innerHTML = html + '</tbody>';
 }
 
 function abrirFormMotorista(id) {
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar motoristas.')) return;
   const m = id ? DB.motoristas.find(x => x.id === id) : null;
   const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
   abrirModal(m ? 'Editar motorista' : 'Novo motorista',
@@ -660,20 +723,23 @@ function renderVeiculos() {
   let html = '<thead><tr>' +
     thSort('veiculos', 'placa', 'Placa') + thSort('veiculos', 'tipo', 'Tipo') + thSort('veiculos', 'modelo', 'Marca/Modelo') +
     thSort('veiculos', 'cor', 'Cor') + thSort('veiculos', 'proprietario', 'Proprietário/Empresa') + thSort('veiculos', 'motorista', 'Motorista') +
-    thSort('veiculos', 'obs', 'Obs.') + '<th></th></tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="8">Nenhum veículo cadastrado.</td></tr>';
+    thSort('veiculos', 'obs', 'Obs.') + (canWriteCadastros() ? '<th></th>' : '') + '</tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteCadastros() ? 8 : 7) + '">Nenhum veículo cadastrado.</td></tr>';
   rows.forEach(v => {
     html += '<tr><td class="mono"><strong>' + esc(v.placa) + '</strong></td><td>' + badgeTipo(v.tipo) + '</td>' +
       '<td>' + esc(v.modelo || '—') + '</td><td>' + esc(v.cor || '—') + '</td>' +
       '<td>' + esc(v.proprietario || '—') + '</td><td>' + esc(v.motorista || '—') + '</td>' +
       '<td>' + esc(v.obs || '—') + '</td>' +
-      '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormVeiculo(\'' + v.id + '\')', ICO.edit) +
-      btnIcon('btn-danger', 'Excluir', 'excluirVeiculo(\'' + v.id + '\')', ICO.trash) + '</td></tr>';
+      (canWriteCadastros()
+        ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormVeiculo(\'' + v.id + '\')', ICO.edit) +
+          btnIcon('btn-danger', 'Excluir', 'excluirVeiculo(\'' + v.id + '\')', ICO.trash) + '</td>'
+        : '') + '</tr>';
   });
   document.getElementById('veiTable').innerHTML = html + '</tbody>';
 }
 
 function abrirFormVeiculo(id) {
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar veiculos.')) return;
   const v = id ? DB.veiculos.find(x => x.id === id) : null;
   const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
   const motoristas = DB.motoristas.map(m => m.nome);
@@ -1056,6 +1122,7 @@ function toCSV(headers, rows) {
 }
 
 function exportarHistoricoCSV() {
+  if (!ensureAllowed(canAccessReports(), 'Seu perfil nao pode gerar relatorios.')) return;
   const rows = filtrarHistorico();
   if (!rows.length) { toast('Nenhum registro para exportar.', 'warn'); return; }
   const csv = toCSV(
@@ -1067,6 +1134,7 @@ function exportarHistoricoCSV() {
 }
 
 function exportarEntregasCSV() {
+  if (!ensureAllowed(canAccessReports(), 'Seu perfil nao pode gerar relatorios.')) return;
   if (!DB.entregas.length) { toast('Nenhuma entrega para exportar.', 'warn'); return; }
   const csv = toCSV(
     ['Data', 'Tipo', 'Fornecedor/Transportadora', 'Motorista', 'Placa', 'NF/Documento', 'Descricao', 'Volumes', 'Destinatario', 'Setor', 'Status', 'Observacoes'],
@@ -1083,6 +1151,7 @@ function dataArquivo() {
 }
 
 function backupJSON() {
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem gerar backup completo.')) return;
   downloadArquivo('backup_controla_marcher_' + dataArquivo() + '.json',
     JSON.stringify({ app: 'Controla Marcher', versao: 1, geradoEm: new Date().toISOString(), dados: DB }, null, 2),
     'application/json');
@@ -1090,6 +1159,10 @@ function backupJSON() {
 }
 
 function restaurarJSON(ev) {
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem restaurar dados.')) {
+    ev.target.value = '';
+    return;
+  }
   const file = ev.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -1165,12 +1238,15 @@ searchInput.addEventListener('input', function () {
   if (!hits.length) {
     searchResults.innerHTML = '<div class="sr-empty">Nenhum resultado para "' + esc(this.value) + '".</div>';
   } else {
-    searchResults.innerHTML = hits.slice(0, 12).map((h, i) =>
+    searchResults.innerHTML = hits.filter((h) => canAccessView(h.view)).slice(0, 12).map((h, i) =>
       '<div class="sr-item" data-view="' + h.view + '">' +
       '<div class="sr-type">' + h.type + (h.status ? ' · ' + h.status : '') + '</div>' +
       '<div><strong>' + esc(h.main) + '</strong></div>' +
       '<div class="muted">' + esc(h.sub) + '</div></div>'
     ).join('');
+    if (!searchResults.innerHTML) {
+      searchResults.innerHTML = '<div class="sr-empty">Nenhum resultado disponivel para o seu perfil.</div>';
+    }
     searchResults.querySelectorAll('.sr-item').forEach(el => {
       el.addEventListener('click', () => {
         searchResults.classList.remove('open');
@@ -1358,7 +1434,7 @@ setupAutocomplete('e_placa', sugestoesVeiculo, preencherEntradaCom);
 const LIMITE_NOME = 18;   // nome + sobrenome exibidos no rodapé
 const USER_KEY = 'controlaMarcher_user';
 
-let USUARIO = { nome: 'Ricardo', sobrenome: 'Guimarães', celular: '', email: '', perfil: 'Administrador', foto: '' };
+let USUARIO = { nome: 'Ricardo', sobrenome: 'Guimaraes', celular: '', email: '', perfil: ROLE_SUPER_ADMIN, foto: '' };
 try {
   const u = JSON.parse(localStorage.getItem(USER_KEY));
   if (u && typeof u === 'object') USUARIO = Object.assign(USUARIO, u);
@@ -1425,16 +1501,19 @@ function salvarUsuario_legacy() {
 }
 
 function perfilBadge(perfil) {
-  const cls = perfil === 'Administrador'
-    ? 'perfil-admin'
-    : perfil === 'Segurança'
-      ? 'perfil-seguranca'
-      : 'perfil-consultas';
-  return '<span class="perfil-chip ' + cls + '">' + esc(perfil) + '</span>';
+  const normalizado = normalizeRole(perfil);
+  const cls = normalizado === ROLE_SUPER_ADMIN
+    ? 'perfil-super-admin'
+    : normalizado === ROLE_ADMIN
+      ? 'perfil-admin'
+      : normalizado === ROLE_SEGURANCA
+        ? 'perfil-seguranca'
+        : 'perfil-consulta';
+  return '<span class="perfil-chip ' + cls + '">' + esc(normalizado) + '</span>';
 }
 
 async function recarregarUsuarios() {
-  if (!isAdmin()) return;
+  if (!canManageUsers()) return;
   try {
     PERFIS_USUARIOS = await loadProfilesRemote();
     renderUsuarios();
@@ -1444,15 +1523,21 @@ async function recarregarUsuarios() {
 }
 
 async function salvarPerfilUsuario(id) {
-  if (!ensureAllowed(isAdmin(), 'So administradores podem alterar perfis.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem alterar perfis.')) return;
   if (USUARIO.id && id === USUARIO.id) {
     toast('Seu proprio perfil deve ser mantido como esta nesta tela.', 'warn');
     return;
   }
   const el = document.getElementById('perfil_' + id);
   if (!el) return;
+  const perfilDestino = normalizeRole(el.value);
+  const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
+  if (!canEditUserRole(usuarioAlvo?.perfil) || !getAssignableRoles().includes(perfilDestino)) {
+    toast('Seu perfil nao pode aplicar essa alteracao.', 'warn');
+    return;
+  }
   try {
-    await updateProfileRoleRemote(id, el.value);
+    await updateProfileRoleRemote(id, perfilDestino);
     await recarregarUsuarios();
     toast('Perfil atualizado com sucesso.');
   } catch (e) {
@@ -1478,11 +1563,13 @@ function abrirAjudaCadastroUsuario_legacy() {
 }
 
 function abrirAjudaCadastroUsuario() {
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuarios.')) return;
+  const perfisDisponiveis = getAssignableRoles();
   abrirModal('Cadastrar usuario',
     '<div class="form-grid">' +
     '<div class="field full"><label>E-mail <span class="req">*</span></label><input id="novoUserEmail" type="email" placeholder="nome@empresa.com.br"></div>' +
     '<div class="field full"><label>Perfil inicial</label><select id="novoUserPerfil">' +
-    PERFIS_ACESSO.map((perfil) => '<option value="' + perfil + '">' + perfil + '</option>').join('') +
+    perfisDisponiveis.map((perfil) => '<option value="' + perfil + '">' + perfil + '</option>').join('') +
     '</select></div>' +
     '<div class="field full"><div class="muted">O sistema vai enviar um e-mail para a pessoa concluir o cadastro, definir a senha e entrar com o perfil escolhido.</div></div>' +
     '</div><div class="form-foot">' +
@@ -1491,11 +1578,15 @@ function abrirAjudaCadastroUsuario() {
 }
 
 async function cadastrarUsuarioConvite() {
-  if (!ensureAllowed(isAdmin(), 'So administradores podem cadastrar usuarios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuarios.')) return;
   const email = document.getElementById('novoUserEmail')?.value.trim().toLowerCase();
-  const perfil = document.getElementById('novoUserPerfil')?.value || 'Consultas';
+  const perfil = normalizeRole(document.getElementById('novoUserPerfil')?.value || ROLE_CONSULTA);
   if (!email) {
     toast('Informe o e-mail do usuario.', 'error');
+    return;
+  }
+  if (!getAssignableRoles().includes(perfil)) {
+    toast('Seu perfil nao pode convidar usuarios com esse papel.', 'warn');
     return;
   }
   try {
@@ -1511,8 +1602,8 @@ async function cadastrarUsuarioConvite() {
 function renderUsuarios() {
   const host = document.getElementById('usersTable');
   if (!host) return;
-  if (!isAdmin()) {
-    host.innerHTML = '<tbody><tr class="empty-row"><td>Somente administradores acessam esta area.</td></tr></tbody>';
+  if (!canManageUsers()) {
+    host.innerHTML = '<tbody><tr class="empty-row"><td>Somente Admin e Super Admin acessam esta area.</td></tr></tbody>';
     return;
   }
   const q = norm((document.getElementById('usuariosBusca')?.value || '').trim());
@@ -1525,17 +1616,25 @@ function renderUsuarios() {
   let html = '<thead><tr><th>Usuario</th><th>E-mail</th><th>Perfil atual</th><th>Trocar perfil</th><th></th></tr></thead><tbody>';
   if (!rows.length) html += '<tr class="empty-row"><td colspan="5">Nenhum usuario encontrado.</td></tr>';
   rows.forEach((u) => {
+    const perfilAtual = normalizeRole(u.perfil);
     const nome = ((u.nome || '') + ' ' + (u.sobrenome || '')).trim() || 'Sem nome';
     const locked = USUARIO.id && u.id === USUARIO.id;
+    const bloqueadoPorPapel = !canEditUserRole(perfilAtual);
+    const disabled = locked || bloqueadoPorPapel;
+    const opcoesPerfil = getAssignableRoles().includes(perfilAtual)
+      ? getAssignableRoles()
+      : [perfilAtual].concat(getAssignableRoles());
     html += '<tr><td><strong>' + esc(nome) + '</strong><div class="users-lock">' + esc(u.id || '') + '</div></td>' +
       '<td>' + esc(u.email || '—') + '</td>' +
-      '<td>' + perfilBadge(u.perfil || 'Consultas') + '</td>' +
-      '<td><select id="perfil_' + u.id + '"' + (locked ? ' disabled' : '') + '>' +
-      PERFIS_ACESSO.map((perfil) => '<option value="' + perfil + '"' + (u.perfil === perfil ? ' selected' : '') + '>' + perfil + '</option>').join('') +
+      '<td>' + perfilBadge(perfilAtual) + '</td>' +
+      '<td><select id="perfil_' + u.id + '"' + (disabled ? ' disabled' : '') + '>' +
+      opcoesPerfil.map((perfil) => '<option value="' + perfil + '"' + (perfilAtual === perfil ? ' selected' : '') + '>' + perfil + '</option>').join('') +
       '</select></td>' +
       '<td>' + (locked
         ? '<span class="users-lock">Usuario atual</span>'
-        : '<button class="btn btn-primary btn-sm" onclick="salvarPerfilUsuario(\'' + u.id + '\')">Salvar</button>') + '</td></tr>';
+        : bloqueadoPorPapel
+          ? '<span class="users-lock">Somente Super Admin</span>'
+          : '<button class="btn btn-primary btn-sm" onclick="salvarPerfilUsuario(\'' + u.id + '\')">Salvar</button>') + '</td></tr>';
   });
   host.innerHTML = html + '</tbody>';
 }
@@ -1695,7 +1794,7 @@ function registrarSaida(id) {
 }
 
 async function salvarVisitante(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem salvar visitantes.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode salvar visitantes.')) return;
   const nome = document.getElementById('cv_nome').value.trim();
   const doc = document.getElementById('cv_doc').value.trim();
   if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
@@ -1729,7 +1828,7 @@ async function salvarVisitante(id) {
 }
 
 function excluirVisitante(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem excluir visitantes.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode excluir visitantes.')) return;
   const v = DB.visitantes.find(x => x.id === id);
   confirmar('Excluir o visitante "' + v.nome + '"? Esta acao nao pode ser desfeita.', async function () {
     DB.visitantes = DB.visitantes.filter(x => x.id !== id);
@@ -1741,7 +1840,7 @@ function excluirVisitante(id) {
 }
 
 async function salvarMotorista(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem salvar motoristas.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode salvar motoristas.')) return;
   const nome = document.getElementById('cm_nome').value.trim();
   const doc = document.getElementById('cm_doc').value.trim();
   if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
@@ -1776,7 +1875,7 @@ async function salvarMotorista(id) {
 }
 
 function excluirMotorista(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem excluir motoristas.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode excluir motoristas.')) return;
   const m = DB.motoristas.find(x => x.id === id);
   confirmar('Excluir o motorista "' + m.nome + '"? Esta acao nao pode ser desfeita.', async function () {
     DB.motoristas = DB.motoristas.filter(x => x.id !== id);
@@ -1788,7 +1887,7 @@ function excluirMotorista(id) {
 }
 
 function salvarVeiculo(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem salvar veiculos.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode salvar veiculos.')) return;
   const placa = document.getElementById('cve_placa').value.trim().toUpperCase();
   if (!placa) { toast('Informe a placa do veiculo.', 'error'); return; }
   const dados = {
@@ -1816,7 +1915,7 @@ function salvarVeiculo(id) {
 }
 
 function excluirVeiculo(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem excluir veiculos.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode excluir veiculos.')) return;
   const v = DB.veiculos.find(x => x.id === id);
   confirmar('Excluir o veiculo "' + v.placa + '"? Esta acao nao pode ser desfeita.', function () {
     DB.veiculos = DB.veiculos.filter(x => x.id !== id);
@@ -1827,7 +1926,7 @@ function excluirVeiculo(id) {
 }
 
 function toggleEmergencia(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem alterar contatos de emergencia.')) return;
+  if (!ensureAllowed(canManageRamais(), 'Somente Admin e Super Admin podem alterar contatos de emergencia.')) return;
   const r = DB.ramais.find(x => x.id === id);
   if (!r) return;
   r.emergencia = !r.emergencia;
@@ -1872,18 +1971,18 @@ function renderRamais() {
     '<col style="width:118px">' +
     '<col style="width:215px">' +
     '<col style="width:13%">' +
-    (canWriteCadastros() ? '<col style="width:92px">' : '') +
+    (canManageRamais() ? '<col style="width:92px">' : '') +
     '</colgroup><thead><tr>' +
     '<th title="Emergencia"></th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'setor\')">Setor / Local' + ind('setor') + '</th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'ramal\')">Ramal' + ind('ramal') + '</th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'responsavel\')">Responsavel' + ind('responsavel') + '</th>' +
-    '<th>Celular</th><th>E-mail</th><th>Obs.</th>' + (canWriteCadastros() ? '<th></th>' : '') + '</tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteCadastros() ? 8 : 7) + '">Nenhum ramal encontrado.</td></tr>';
+    '<th>Celular</th><th>E-mail</th><th>Obs.</th>' + (canManageRamais() ? '<th></th>' : '') + '</tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canManageRamais() ? 8 : 7) + '">Nenhum ramal encontrado.</td></tr>';
   rows.forEach(r => {
     const tel = (r.celular || '').replace(/[^0-9+]/g, '');
     html += '<tr class="' + (r.emergencia ? 'emrg-row' : '') + '">' +
-      '<td>' + (canWriteCadastros()
+      '<td>' + (canManageRamais()
         ? '<button class="star-btn' + (r.emergencia ? ' on' : '') + '" title="' + (r.emergencia ? 'Remover de emergencia' : 'Marcar como contato de emergencia') + '" onclick="toggleEmergencia(\'' + r.id + '\')">' + (r.emergencia ? '★' : '☆') + '</button>'
         : (r.emergencia ? '★' : '')) + '</td>' +
       '<td><strong>' + esc(r.setor) + '</strong></td><td class="mono">' + esc(r.ramal || '—') + '</td>' +
@@ -1891,14 +1990,14 @@ function renderRamais() {
       '<td class="mono">' + (r.celular ? '<a href="tel:' + esc(tel) + '">' + esc(fmtCelular(r.celular)) + '</a>' : '—') + '</td>' +
       '<td>' + (r.email ? '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : '—') + '</td>' +
       '<td>' + esc(r.obs || '—') + '</td>' +
-      (canWriteCadastros() ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormRamal(\'' + r.id + '\')', ICO.edit) + btnIcon('btn-danger', 'Excluir', 'excluirRamal(\'' + r.id + '\')', ICO.trash) + '</td>' : '') +
+      (canManageRamais() ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormRamal(\'' + r.id + '\')', ICO.edit) + btnIcon('btn-danger', 'Excluir', 'excluirRamal(\'' + r.id + '\')', ICO.trash) + '</td>' : '') +
       '</tr>';
   });
   document.getElementById('ramaisTable').innerHTML = html + '</tbody>';
 }
 
 function salvarRamal(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem salvar ramais.')) return;
+  if (!ensureAllowed(canManageRamais(), 'Somente Admin e Super Admin podem salvar ramais.')) return;
   const setor = document.getElementById('cr_setor').value.trim();
   const ramal = document.getElementById('cr_ramal').value.trim();
   if (!setor || !ramal) { toast('Preencha Setor e Ramal.', 'error'); return; }
@@ -1927,7 +2026,7 @@ function salvarRamal(id) {
 }
 
 function excluirRamal(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'So administradores podem excluir ramais.')) return;
+  if (!ensureAllowed(canManageRamais(), 'Somente Admin e Super Admin podem excluir ramais.')) return;
   const r = DB.ramais.find(x => x.id === id);
   confirmar('Excluir o ramal de "' + r.setor + '"? Esta acao nao pode ser desfeita.', function () {
     DB.ramais = DB.ramais.filter(x => x.id !== id);
@@ -2096,18 +2195,20 @@ Object.assign(window, {
 
 /* ---- API consumida pelo bootstrap (main.js) ---- */
 export function setUsuario(u) {
-  if (u) Object.assign(USUARIO, u);
-  ROLE = USUARIO.perfil || 'Consultas';
+  if (u) Object.assign(USUARIO, u, { perfil: normalizeRole(u.perfil) });
+  ROLE = normalizeRole(USUARIO.perfil);
+  USUARIO.perfil = ROLE;
   renderUserCard();
 }
 export function renderApp() { renderUserCard(); renderAll(); }
 export function applyRole(perfil) {
-  // Só 'Administrador' e 'Segurança' são reconhecidos; qualquer outro valor
-  // (typo, null, papel legado) cai em 'Consultas' — o mais restritivo.
-  ROLE = (perfil === 'Administrador' || perfil === 'Segurança') ? perfil : 'Consultas';
-  document.body.classList.remove('role-seguranca', 'role-consultas');
-  if (ROLE === 'Segurança') document.body.classList.add('role-seguranca');
-  else if (ROLE !== 'Administrador') document.body.classList.add('role-consultas');
+  ROLE = normalizeRole(perfil);
+  USUARIO.perfil = ROLE;
+  document.body.classList.remove('role-super-admin', 'role-admin', 'role-seguranca', 'role-consulta');
+  if (ROLE === ROLE_SUPER_ADMIN) document.body.classList.add('role-super-admin');
+  else if (ROLE === ROLE_ADMIN) document.body.classList.add('role-admin');
+  else if (ROLE === ROLE_SEGURANCA) document.body.classList.add('role-seguranca');
+  else document.body.classList.add('role-consulta');
 }
 
 

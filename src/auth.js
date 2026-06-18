@@ -58,7 +58,7 @@ export async function currentProfile() {
     celular: '',
     email: u.user.email,
     foto: '',
-    perfil: 'Segurança'
+    perfil: 'Consulta'
   };
   const { error: createError } = await supabase.from('profiles').upsert(novo);
   if (createError) throw new Error('Falha ao criar perfil inicial: ' + createError.message);
