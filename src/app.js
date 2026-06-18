@@ -3,7 +3,7 @@
    Persistência via camada de dados (Supabase ou localStorage)
    ============================================================ */
 import { repo } from './data/repo.js';
-import { inviteUserRemote, loadProfilesRemote, logout, saveProfileRemote, updateProfileRoleRemote } from './auth.js';
+import { deleteUserRemote, inviteUserRemote, loadProfilesRemote, logout, saveProfileRemote, updateProfileRoleRemote, updateUserStatusRemote } from './auth.js';
 import { seedRamais } from './data/seed.js';
 import { deleteManagedPhoto, uploadPhotoIfNeeded } from './data/storage.js';
 
@@ -137,7 +137,8 @@ const ICO = {
   edit:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l-1-14"/><path d="M10 11v6M14 11v6"/></svg>',
   exit:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M9 16l4-4-4-4"/><path d="M13 12H3"/></svg>',
-  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 5.6a8 8 0 1 1-12.8 0"/></svg>'
 };
 
 /* Monta um botão de ação só com ícone (com tooltip/acessibilidade). */
@@ -1513,6 +1514,12 @@ function perfilBadge(perfil) {
   return '<span class="perfil-chip ' + cls + '">' + esc(normalizado) + '</span>';
 }
 
+function statusBadge(ativo) {
+  return ativo === false
+    ? '<span class="badge b-inativo">Inativo</span>'
+    : '<span class="badge b-ativo">Ativo</span>';
+}
+
 async function recarregarUsuarios() {
   if (!canManageUsers()) return;
   try {
@@ -1625,9 +1632,9 @@ function renderUsuarios() {
     const opcoesPerfil = getAssignableRoles().includes(perfilAtual)
       ? getAssignableRoles()
       : [perfilAtual].concat(getAssignableRoles());
-    html += '<tr><td><strong>' + esc(nome) + '</strong><div class="users-lock">' + esc(u.id || '') + '</div></td>' +
+    html += '<tr><td><strong>' + esc(nome) + '</strong></td>' +
       '<td>' + esc(u.email || '—') + '</td>' +
-      '<td>' + perfilBadge(perfilAtual) + '</td>' +
+      '<td><div class="users-status-cell">' + perfilBadge(perfilAtual) + statusBadge(u.ativo) + '</div></td>' +
       '<td><select id="perfil_' + u.id + '"' + (disabled ? ' disabled' : '') + '>' +
       opcoesPerfil.map((perfil) => '<option value="' + perfil + '"' + (perfilAtual === perfil ? ' selected' : '') + '>' + perfil + '</option>').join('') +
       '</select></td>' +
@@ -1635,7 +1642,11 @@ function renderUsuarios() {
         ? '<span class="users-lock">Usuario atual</span>'
         : bloqueadoPorPapel
           ? '<span class="users-lock">Somente Super Admin</span>'
-          : '<button class="btn btn-primary btn-sm" onclick="salvarPerfilUsuario(\'' + u.id + '\')">Salvar</button>') + '</td></tr>';
+          : '<div class="users-actions">' +
+              btnIcon('btn-primary', 'Salvar perfil', 'salvarPerfilUsuario(\'' + u.id + '\')', ICO.check) +
+              btnIcon(u.ativo === false ? 'btn-success' : 'btn-ghost', u.ativo === false ? 'Ativar usuario' : 'Desativar usuario', 'alternarStatusUsuario(\'' + u.id + '\')', ICO.power) +
+              btnIcon('btn-danger', 'Excluir usuario', 'excluirUsuario(\'' + u.id + '\')', ICO.trash) +
+            '</div>') + '</td></tr>';
   });
   host.innerHTML = html + '</tbody>';
 }
@@ -1664,6 +1675,52 @@ async function logoutUsuario() {
   } catch (e) {
     toast(e.message || 'Falha ao sair do sistema.', 'error');
   }
+}
+
+async function alternarStatusUsuario(id) {
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem alterar usuarios.')) return;
+  const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
+  if (!usuarioAlvo) return;
+  if (USUARIO.id && id === USUARIO.id) {
+    toast('Voce nao pode desativar seu proprio usuario.', 'warn');
+    return;
+  }
+  if (!canEditUserRole(usuarioAlvo.perfil)) {
+    toast('Seu perfil nao pode alterar este usuario.', 'warn');
+    return;
+  }
+  const proximoAtivo = usuarioAlvo.ativo === false;
+  try {
+    await updateUserStatusRemote(id, proximoAtivo);
+    await recarregarUsuarios();
+    toast(proximoAtivo ? 'Usuario ativado.' : 'Usuario desativado.');
+  } catch (e) {
+    toast(e.message || 'Falha ao alterar status do usuario.', 'error');
+  }
+}
+
+function excluirUsuario(id) {
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem excluir usuarios.')) return;
+  const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
+  if (!usuarioAlvo) return;
+  if (USUARIO.id && id === USUARIO.id) {
+    toast('Voce nao pode excluir seu proprio usuario.', 'warn');
+    return;
+  }
+  if (!canEditUserRole(usuarioAlvo.perfil)) {
+    toast('Seu perfil nao pode excluir este usuario.', 'warn');
+    return;
+  }
+  const nome = ((usuarioAlvo.nome || '') + ' ' + (usuarioAlvo.sobrenome || '')).trim() || usuarioAlvo.email || 'Sem nome';
+  confirmar('Excluir o usuario "' + nome + '"? Esta acao nao pode ser desfeita.', async function () {
+    try {
+      await deleteUserRemote(id);
+      await recarregarUsuarios();
+      toast('Usuario excluido.');
+    } catch (e) {
+      toast(e.message || 'Falha ao excluir usuario.', 'error');
+    }
+  });
 }
 
 async function salvarUsuario() {
@@ -2180,6 +2237,7 @@ Object.assign(window, {
   renderVisitantes,
   recarregarUsuarios,
   restaurarJSON,
+  alternarStatusUsuario,
   salvarEntrega,
   salvarMotorista,
   salvarPerfilUsuario,
@@ -2187,6 +2245,7 @@ Object.assign(window, {
   salvarUsuario,
   salvarVeiculo,
   salvarVisitante,
+  excluirUsuario,
   showView,
   tirarFotoWebcam,
   toggleEmergencia,

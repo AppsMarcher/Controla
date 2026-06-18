@@ -3,7 +3,7 @@
 import { USE_SUPABASE } from './config.js';
 import { supabase } from './data/client.js';
 
-const PROFILE_FIELDS = 'id, nome, sobrenome, celular, email, foto, perfil, created_at';
+const PROFILE_FIELDS = 'id, nome, sobrenome, celular, email, foto, ativo, perfil, created_at';
 
 function isRecoveryFlow() {
   const raw = window.location.hash + '&' + window.location.search;
@@ -170,7 +170,13 @@ export async function currentProfile() {
     .maybeSingle();
 
   if (error) throw new Error('Falha ao carregar perfil: ' + error.message);
-  if (data) return data;
+  if (data) {
+    if (data.ativo === false) {
+      await supabase.auth.signOut({ scope: 'local' });
+      throw new Error('Usuario desativado. Procure um administrador.');
+    }
+    return data;
+  }
 
   const novo = {
     id: u.user.id,
@@ -179,6 +185,7 @@ export async function currentProfile() {
     celular: '',
     email: u.user.email,
     foto: '',
+    ativo: true,
     perfil: 'Consulta'
   };
   const { error: createError } = await supabase.from('profiles').upsert(novo);
@@ -223,6 +230,26 @@ export async function inviteUserRemote(email, perfil) {
     body: { email, perfil }
   });
   if (error) throw new Error('Falha ao enviar convite: ' + error.message);
+  if (data?.error) throw new Error(data.error);
+  return data || {};
+}
+
+export async function updateUserStatusRemote(id, ativo) {
+  if (!USE_SUPABASE) return;
+  const { data, error } = await supabase.functions.invoke('manage-user', {
+    body: { action: 'set_active', userId: id, ativo }
+  });
+  if (error) throw new Error('Falha ao atualizar status do usuario: ' + error.message);
+  if (data?.error) throw new Error(data.error);
+  return data || {};
+}
+
+export async function deleteUserRemote(id) {
+  if (!USE_SUPABASE) return;
+  const { data, error } = await supabase.functions.invoke('manage-user', {
+    body: { action: 'delete_user', userId: id }
+  });
+  if (error) throw new Error('Falha ao excluir usuario: ' + error.message);
   if (data?.error) throw new Error(data.error);
   return data || {};
 }
