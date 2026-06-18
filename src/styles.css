@@ -318,7 +318,7 @@ tr.emrg-row:hover td{background:#F6CED3}
    ============================================================ */
 .login-overlay{position:fixed;inset:0;z-index:300;background:var(--chumbo,#2b2b28);display:flex;align-items:center;justify-content:center;padding:20px}
 .login-card{background:#fff;border-radius:14px;padding:28px;width:min(360px,100%);box-shadow:0 20px 60px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:12px}
-.login-logo{height:42px;width:auto;object-fit:contain;align-self:flex-start;margin-bottom:2px}
+.login-logo{height:54px;width:auto;object-fit:contain;align-self:center;margin:0 auto 8px}
 .login-card h1{font-size:1.05rem;margin:0}
 .login-card .login-sub{font-size:.8rem;color:#777;margin:-6px 0 6px}
 .login-card label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:700;color:var(--chumbo);text-transform:uppercase;letter-spacing:.03em}
@@ -327,15 +327,19 @@ tr.emrg-row:hover td{background:#F6CED3}
 .login-err{color:var(--vermelho);font-size:.8rem;min-height:1em}
 .login-card .btn{margin-top:6px;justify-content:center}
 body.role-seguranca .admin-only{display:none !important}
-body.role-consultas .admin-only{display:none !important}
-body.role-consultas .op-write-only{display:none !important}
+body.role-seguranca button[data-view="relatorios"]{display:none !important}
+body.role-consulta .admin-only{display:none !important}
+body.role-consulta .op-write-only{display:none !important}
+body.role-consulta .cadastros-write-only{display:none !important}
+body.role-consulta .backup-admin-only{display:none !important}
 
 .perfil-chip{
   display:inline-flex;align-items:center;justify-content:center;
   min-width:112px;padding:6px 10px;border-radius:999px;
   font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
 }
+.perfil-super-admin{background:#1f1f1f;color:#fff}
 .perfil-admin{background:var(--vermelho-bg);color:var(--vermelho)}
 .perfil-seguranca{background:var(--verde-bg);color:var(--verde)}
-.perfil-consultas{background:var(--cinza-bg);color:var(--cinza-badge)}
+.perfil-consulta{background:var(--cinza-bg);color:var(--cinza-badge)}
 .users-lock{font-size:.74rem;color:#8A8B83}
