@@ -325,22 +325,25 @@ tr.emrg-row:hover td{background:#F6CED3}
 .login-card input{padding:10px 12px;border:1.5px solid var(--cinza);border-radius:8px;font-size:.95rem;outline:none}
 .login-card input:focus{border-color:var(--vermelho)}
 .login-link-row{
-  display:block;
+  display:flex;
+  justify-content:flex-end;
   width:100%;
-  margin-top:-2px;
-  margin-bottom:2px;
+  margin-top:-6px;
+  margin-bottom:4px;
 }
 .login-link{
   display:inline-block;
   border:none;
-  background:none;
+  background:#fff;
   color:var(--vermelho);
-  font-size:.78rem;
+  font-size:.75rem;
   font-weight:700;
   padding:0;
   text-transform:none;
   letter-spacing:0;
   line-height:1.2;
+  box-shadow:none;
+  outline:none;
 }
 .login-link:hover{text-decoration:underline}
 .password-field{
