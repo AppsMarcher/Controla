@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controla Marcher - Controle de Portaria</title>
+  <link rel="icon" href="/controla-logo.png">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+
+<div id="loginOverlay" class="login-overlay" style="display:none">
+  <form id="loginForm" class="login-card" autocomplete="on">
+    <img class="login-logo" src="/controla-logo2.png" alt="Controla Marcher">
+    <div class="login-sub">Acesso restrito - entre com suas credenciais</div>
+    <label>E-mail<input id="loginEmail" type="email" required autocomplete="username"></label>
+    <label>Senha<input id="loginPass" type="password" required autocomplete="current-password"></label>
+    <div id="loginErr" class="login-err"></div>
+    <button type="submit" class="btn btn-primary" id="loginBtn">Entrar</button>
+  </form>
+</div>
+
+<header>
+  <button id="menuToggle" aria-label="Abrir menu">☰</button>
+  <div class="brand">
+    <img class="brand-logo" src="/controla-logo.png" alt="Controla Marcher Brasil" title="Ir para o inicio" role="button" tabindex="0" onclick="showView('dashboard')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showView('dashboard');}">
+  </div>
+  <div class="header-search">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B9BAB2" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      <input id="globalSearch" type="text" placeholder="Buscar nome, documento, placa, empresa ou ramal..." autocomplete="off">
+      <div id="searchResults"></div>
+    </div>
+  </div>
+  <div class="header-clock" id="headerClock"></div>
+</header>
+
+<div class="layout">
+  <nav id="sidebar">
+    <div class="nav-scroll">
+      <div class="nav-label">Operacao</div>
+      <button data-view="dashboard" class="active"><span class="ico">▪</span>Dashboard</button>
+      <button data-view="entrada"><span class="ico">→</span>Controle de Entrada</button>
+      <button data-view="saida"><span class="ico">←</span>Controle de Saida</button>
+      <button data-view="entregas"><span class="ico">▣</span>Entregas e Produtos</button>
+      <div class="nav-label admin-only">Cadastros</div>
+      <button class="admin-only" data-view="visitantes"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5"/></svg></span>Visitantes</button>
+      <button class="admin-only" data-view="motoristas"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/><path d="M12 3v6.6M5.2 17.5l5-3.4M18.8 17.5l-5-3.4"/></svg></span>Motoristas</button>
+      <button class="admin-only" data-view="veiculos"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 16V6.5h12V16"/><path d="M13.5 9.5h4l3 3.2V16h-7"/><circle cx="6" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/><path d="M8 17.5h7"/></svg></span>Veiculos</button>
+      <button class="admin-only" data-view="usuarios" title="Usuarios" aria-label="Usuarios"><span class="ico">◎</span>Usuarios</button>
+      <div class="nav-label">Consulta</div>
+      <button data-view="historico"><span class="ico">≡</span>Historico</button>
+      <button data-view="relatorios"><span class="ico">▤</span>Relatorios</button>
+      <button data-view="ramais"><span class="ico">☎</span>Lista de Ramais</button>
+    </div>
+    <div class="user-card" id="userCard" title="Abrir area do usuario" onclick="abrirAreaUsuario()"></div>
+    <button class="user-logout btn btn-ghost btn-sm" type="button" onclick="logoutUsuario()">Sair</button>
+  </nav>
+
+  <main>
+    <section class="view active" id="view-dashboard">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Situacao da portaria agora</div>
+        </div>
+        <button class="btn btn-primary op-write-only" onclick="showView('entrada')">+ Registrar Entrada</button>
+      </div>
+      <div class="cards" id="dashCards"></div>
+      <div class="panel">
+        <h3>Ultimos registros do dia</h3>
+        <div class="table-wrap"><table id="dashTable"></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-entrada">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Controle de Entrada</div>
+          <div class="page-sub">Registro de acesso de pessoas, motoristas e prestadores</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="form-grid" id="formEntrada">
+          <div class="field">
+            <label>Tipo de acesso <span class="req">*</span></label>
+            <select id="e_tipo">
+              <option value="interno">Interno (funcionario)</option>
+              <option value="visitante">Visitante</option>
+              <option value="motorista">Motorista</option>
+              <option value="prestador">Prestador de servico</option>
+              <option value="entrega">Entrega</option>
+            </select>
+          </div>
+          <div class="field"><label>Nome <span class="req">*</span></label><input id="e_nome" type="text" placeholder="Nome completo"></div>
+          <div class="field"><label>Documento <span class="req">*</span></label><input id="e_doc" type="text" placeholder="CPF / RG / CNH"></div>
+          <div class="field"><label>Empresa</label><input id="e_empresa" type="text" placeholder="Empresa de origem"></div>
+          <div class="field"><label>Telefone</label><input id="e_tel" type="text" placeholder="(00) 00000-0000"></div>
+          <div class="field"><label>Placa do veiculo</label><input id="e_placa" type="text" placeholder="ABC1D23" style="text-transform:uppercase"></div>
+          <div class="field"><label>Pessoa / setor visitado</label><input id="e_visitado" type="text" placeholder="Quem vai receber"></div>
+          <div class="field"><label>Motivo da entrada</label><input id="e_motivo" type="text" placeholder="Ex.: reuniao, manutencao, coleta"></div>
+          <div class="field full"><label>Observacoes</label><textarea id="e_obs" placeholder="Informacoes adicionais"></textarea></div>
+        </div>
+        <div class="form-foot op-write-only">
+          <button class="btn btn-primary" onclick="registrarEntrada()">Registrar entrada</button>
+          <button class="btn btn-ghost" onclick="limparFormEntrada()">Limpar campos</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-saida">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Controle de Saida</div>
+          <div class="page-sub">Pessoas atualmente dentro da unidade</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="filters">
+          <input id="saidaBusca" type="text" placeholder="Filtrar por nome, documento ou placa" oninput="renderSaida()">
+        </div>
+        <div class="table-wrap"><table id="saidaTable"></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-entregas">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Entregas e Produtos</div>
+          <div class="page-sub">Recebimentos, retiradas e coletas</div>
+        </div>
+        <button class="btn btn-primary op-write-only" onclick="abrirFormEntrega()">+ Nova entrega</button>
+      </div>
+      <div class="panel">
+        <div class="filters">
+          <input id="entregaBusca" type="text" placeholder="Filtrar por fornecedor, NF, motorista ou placa" oninput="renderEntregas()">
+          <select id="entregaStatusFiltro" onchange="renderEntregas()">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="recebido">Recebido</option>
+            <option value="entregue">Entregue</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+        <div class="table-wrap"><table id="entregasTable"></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-usuarios">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Usuarios</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="filters" style="grid-template-columns:1fr auto">
+          <input id="usuariosBusca" type="text" placeholder="Filtrar por nome, e-mail ou perfil" oninput="renderUsuarios()">
+          <div class="actions">
+            <button class="btn btn-secondary btn-sm" onclick="abrirAjudaCadastroUsuario()">Cadastrar usuario</button>
+            <button class="btn btn-ghost btn-sm" onclick="recarregarUsuarios()">Atualizar lista</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table id="usersTable"></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-visitantes">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Cadastro de Visitantes</div>
+          <div class="page-sub">Visitantes recorrentes da unidade</div>
+        </div>
+        <button class="btn btn-primary" onclick="abrirFormVisitante()">+ Novo visitante</button>
+      </div>
+      <div class="panel">
+        <div class="filters"><input id="visBusca" type="text" placeholder="Filtrar por nome, documento ou empresa" oninput="renderVisitantes()"></div>
+        <div class="table-wrap"><table id="visTable"></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-motoristas">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Cadastro de Motoristas</div>
+          <div class="page-sub">Motoristas e transportadoras</div>
+        </div>
+        <button class="btn btn-primary" onclick="abrirFormMotorista()">+ Novo motorista</button>
+      </div>
+      <div class="panel">
+        <div class="filters"><input id="motBusca" type="text" placeholder="Filtrar por nome, documento, transportadora ou placa" oninput="renderMotoristas()"></div>
+        <div class="table-wrap"><table id="motTable"></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-veiculos">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Cadastro de Veiculos</div>
+          <div class="page-sub">Frota e veiculos autorizados</div>
+        </div>
+        <button class="btn btn-primary" onclick="abrirFormVeiculo()">+ Novo veiculo</button>
+      </div>
+      <div class="panel">
+        <div class="filters"><input id="veiBusca" type="text" placeholder="Filtrar por placa, modelo ou proprietario" oninput="renderVeiculos()"></div>
+        <div class="table-wrap"><table id="veiTable"></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-historico">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Historico</div>
+          <div class="page-sub">Todos os registros de entrada e saida</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="filters">
+          <input id="h_nome" type="text" placeholder="Nome" oninput="renderHistorico()">
+          <input id="h_doc" type="text" placeholder="Documento" oninput="renderHistorico()">
+          <input id="h_empresa" type="text" placeholder="Empresa" oninput="renderHistorico()">
+          <input id="h_placa" type="text" placeholder="Placa" oninput="renderHistorico()">
+          <select id="h_tipo" onchange="renderHistorico()">
+            <option value="">Todos os tipos</option>
+            <option value="interno">Interno</option>
+            <option value="visitante">Visitante</option>
+            <option value="motorista">Motorista</option>
+            <option value="prestador">Prestador</option>
+            <option value="entrega">Entrega</option>
+          </select>
+          <select id="h_status" onchange="renderHistorico()">
+            <option value="">Todos os status</option>
+            <option value="Dentro">Dentro</option>
+            <option value="Saiu">Saiu</option>
+          </select>
+          <input id="h_dataIni" type="date" onchange="renderHistorico()" title="Data inicial">
+          <input id="h_dataFim" type="date" onchange="renderHistorico()" title="Data final">
+        </div>
+        <div style="margin-bottom:12px"><button class="btn btn-ghost btn-sm" onclick="limparFiltrosHistorico()">Limpar filtros</button></div>
+        <div class="table-wrap"><table id="histTable"></table></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-relatorios">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Relatorios</div>
+          <div class="page-sub">Exportacao e backup dos dados</div>
+        </div>
+      </div>
+      <div class="report-grid">
+        <div class="report-card">
+          <h4>Historico em CSV</h4>
+          <p>Exporta todos os registros de entrada e saida, respeitando os filtros aplicados na tela de Historico.</p>
+          <button class="btn btn-primary" onclick="exportarHistoricoCSV()">Exportar historico</button>
+        </div>
+        <div class="report-card">
+          <h4>Entregas em CSV</h4>
+          <p>Exporta todas as entregas e movimentacoes de produtos registradas.</p>
+          <button class="btn btn-primary" onclick="exportarEntregasCSV()">Exportar entregas</button>
+        </div>
+        <div class="report-card">
+          <h4>Limpar filtros</h4>
+          <p>Remove todos os filtros aplicados nas telas de Historico e Entregas.</p>
+          <button class="btn btn-secondary" onclick="limparTodosFiltros()">Limpar filtros</button>
+        </div>
+        <div class="report-card">
+          <h4>Backup em JSON</h4>
+          <p>Baixa um arquivo com todos os dados do sistema: acessos, cadastros e entregas.</p>
+          <button class="btn btn-secondary" onclick="backupJSON()">Baixar backup</button>
+        </div>
+        <div class="report-card">
+          <h4>Restaurar dados</h4>
+          <p>Restaura os dados a partir de um arquivo de backup JSON gerado por este sistema.</p>
+          <button class="btn btn-secondary" onclick="document.getElementById('restoreInput').click()">Restaurar de JSON</button>
+          <input id="restoreInput" type="file" accept="application/json,.json" style="display:none" onchange="restaurarJSON(event)">
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-ramais">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Lista de Ramais</div>
+          <div class="page-sub">Ramais e contatos internos da unidade</div>
+        </div>
+        <button class="btn btn-primary admin-only" onclick="abrirFormRamal()">+ Novo ramal</button>
+      </div>
+      <div class="panel">
+        <div class="filters" style="grid-template-columns:1fr auto">
+          <input id="ramalBusca" type="text" placeholder="Filtrar por setor, ramal, responsavel, celular ou e-mail" oninput="renderRamais()">
+          <button class="btn btn-ghost btn-sm" id="ramalEmrgToggle" onclick="toggleSoEmrg()">★ So emergencia</button>
+        </div>
+        <div id="ramaisEmergencia" class="emrg-wrap" style="display:none"></div>
+        <div class="table-wrap"><table id="ramaisTable"></table></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox">
+    <div class="modal-head">
+      <h3 id="modalTitle">Formulario</h3>
+      <button class="modal-close" onclick="fecharModal()" aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toastBox"></div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
