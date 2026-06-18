@@ -20,7 +20,20 @@ function showLogin() {
     const form = document.getElementById('loginForm');
     const err = document.getElementById('loginErr');
     const btn = document.getElementById('loginBtn');
+    const passInput = document.getElementById('loginPass');
+    const passToggle = document.getElementById('loginPassToggle');
     overlay.style.display = 'flex';
+
+    if (passToggle && passInput && !passToggle.dataset.bound) {
+      passToggle.dataset.bound = '1';
+      passToggle.addEventListener('click', () => {
+        const visible = passInput.type === 'text';
+        passInput.type = visible ? 'password' : 'text';
+        passToggle.setAttribute('aria-label', visible ? 'Mostrar senha' : 'Ocultar senha');
+        passToggle.setAttribute('title', visible ? 'Mostrar senha' : 'Ocultar senha');
+        passToggle.textContent = visible ? '👁' : '🙈';
+      });
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
