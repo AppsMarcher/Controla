@@ -12,7 +12,6 @@
 <div id="loginOverlay" class="login-overlay" style="display:none">
   <form id="loginForm" class="login-card" autocomplete="on">
     <img class="login-logo" src="./public/controla-logo2.png" alt="Controla Marcher">
-    <div class="login-sub">Acesso restrito - entre com suas credenciais</div>
     <label>E-mail<input id="loginEmail" type="email" required autocomplete="username"></label>
     <label>Senha<input id="loginPass" type="password" required autocomplete="current-password"></label>
     <div id="loginErr" class="login-err"></div>
@@ -43,10 +42,10 @@
       <button data-view="entrada"><span class="ico">→</span>Controle de Entrada</button>
       <button data-view="saida"><span class="ico">←</span>Controle de Saida</button>
       <button data-view="entregas"><span class="ico">▣</span>Entregas e Produtos</button>
-      <div class="nav-label admin-only">Cadastros</div>
-      <button class="admin-only" data-view="visitantes"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5"/></svg></span>Visitantes</button>
-      <button class="admin-only" data-view="motoristas"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/><path d="M12 3v6.6M5.2 17.5l5-3.4M18.8 17.5l-5-3.4"/></svg></span>Motoristas</button>
-      <button class="admin-only" data-view="veiculos"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 16V6.5h12V16"/><path d="M13.5 9.5h4l3 3.2V16h-7"/><circle cx="6" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/><path d="M8 17.5h7"/></svg></span>Veiculos</button>
+      <div class="nav-label">Cadastros</div>
+      <button data-view="visitantes"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5"/></svg></span>Visitantes</button>
+      <button data-view="motoristas"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/><path d="M12 3v6.6M5.2 17.5l5-3.4M18.8 17.5l-5-3.4"/></svg></span>Motoristas</button>
+      <button data-view="veiculos"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 16V6.5h12V16"/><path d="M13.5 9.5h4l3 3.2V16h-7"/><circle cx="6" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/><path d="M8 17.5h7"/></svg></span>Veiculos</button>
       <button class="admin-only" data-view="usuarios" title="Usuarios" aria-label="Usuarios"><span class="ico">◎</span>Usuarios</button>
       <div class="nav-label">Consulta</div>
       <button data-view="historico"><span class="ico">≡</span>Historico</button>
@@ -170,7 +169,7 @@
           <div class="page-title">Cadastro de Visitantes</div>
           <div class="page-sub">Visitantes recorrentes da unidade</div>
         </div>
-        <button class="btn btn-primary" onclick="abrirFormVisitante()">+ Novo visitante</button>
+        <button class="btn btn-primary cadastros-write-only" onclick="abrirFormVisitante()">+ Novo visitante</button>
       </div>
       <div class="panel">
         <div class="filters"><input id="visBusca" type="text" placeholder="Filtrar por nome, documento ou empresa" oninput="renderVisitantes()"></div>
@@ -184,7 +183,7 @@
           <div class="page-title">Cadastro de Motoristas</div>
           <div class="page-sub">Motoristas e transportadoras</div>
         </div>
-        <button class="btn btn-primary" onclick="abrirFormMotorista()">+ Novo motorista</button>
+        <button class="btn btn-primary cadastros-write-only" onclick="abrirFormMotorista()">+ Novo motorista</button>
       </div>
       <div class="panel">
         <div class="filters"><input id="motBusca" type="text" placeholder="Filtrar por nome, documento, transportadora ou placa" oninput="renderMotoristas()"></div>
@@ -198,7 +197,7 @@
           <div class="page-title">Cadastro de Veiculos</div>
           <div class="page-sub">Frota e veiculos autorizados</div>
         </div>
-        <button class="btn btn-primary" onclick="abrirFormVeiculo()">+ Novo veiculo</button>
+        <button class="btn btn-primary cadastros-write-only" onclick="abrirFormVeiculo()">+ Novo veiculo</button>
       </div>
       <div class="panel">
         <div class="filters"><input id="veiBusca" type="text" placeholder="Filtrar por placa, modelo ou proprietario" oninput="renderVeiculos()"></div>
@@ -263,12 +262,12 @@
           <p>Remove todos os filtros aplicados nas telas de Historico e Entregas.</p>
           <button class="btn btn-secondary" onclick="limparTodosFiltros()">Limpar filtros</button>
         </div>
-        <div class="report-card">
+        <div class="report-card backup-admin-only">
           <h4>Backup em JSON</h4>
           <p>Baixa um arquivo com todos os dados do sistema: acessos, cadastros e entregas.</p>
           <button class="btn btn-secondary" onclick="backupJSON()">Baixar backup</button>
         </div>
-        <div class="report-card">
+        <div class="report-card backup-admin-only">
           <h4>Restaurar dados</h4>
           <p>Restaura os dados a partir de um arquivo de backup JSON gerado por este sistema.</p>
           <button class="btn btn-secondary" onclick="document.getElementById('restoreInput').click()">Restaurar de JSON</button>
