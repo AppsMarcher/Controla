@@ -324,13 +324,25 @@ tr.emrg-row:hover td{background:#F6CED3}
 .login-card label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:700;color:var(--chumbo);text-transform:uppercase;letter-spacing:.03em}
 .login-card input{padding:10px 12px;border:1.5px solid var(--cinza);border-radius:8px;font-size:.95rem;outline:none}
 .login-card input:focus{border-color:var(--vermelho)}
-.password-field{position:relative;width:100%}
-.password-field input{width:100%;padding-right:46px}
+.password-field{
+  position:relative;
+  width:100%;
+  display:block;
+}
+.password-field input{
+  display:block;
+  width:100%;
+  padding-right:44px;
+}
 .password-toggle{
-  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  position:absolute;
+  top:50%;
+  right:10px;
+  transform:translateY(-50%);
   border:none;background:none;color:var(--cinza-badge);font-size:1rem;
   line-height:1;padding:6px;border-radius:6px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
+  z-index:2;
 }
 .password-toggle svg{width:18px;height:18px;display:block}
 .password-toggle:hover{background:var(--cinza-bg);color:var(--chumbo)}
