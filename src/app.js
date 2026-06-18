@@ -52,7 +52,7 @@ function canQuickSaveCadastros() { return canWriteCadastros(); }
 function canWriteOperacao() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA; }
 function canAccessReports() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_CONSULTA; }
 function canManageRamais() { return isSuperAdmin() || isAdmin(); }
-function canFavoriteRamais() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA; }
+function canFavoriteRamais() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA || ROLE === ROLE_CONSULTA; }
 function getAssignableRoles() {
   return isSuperAdmin()
     ? PERFIS_ACESSO.slice()
