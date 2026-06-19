@@ -364,6 +364,33 @@
         </div>
         <div class="table-wrap"><table id="arquivadosTable"></table></div>
       </div>
+      <div class="panel backup-admin-only" id="auditoriaPanel">
+        <div class="page-head page-head-tight">
+          <div>
+            <div class="page-title page-title-sm">Auditoria</div>
+            <div class="page-sub">Últimas alterações registradas no banco de dados para rastreabilidade operacional.</div>
+          </div>
+          <div class="actions">
+            <select id="auditoriaTabela" onchange="renderAuditoria()">
+              <option value="">Todas as tabelas</option>
+              <option value="visitantes">Visitantes</option>
+              <option value="motoristas">Motoristas</option>
+              <option value="veiculos">Veículos</option>
+              <option value="acessos">Acessos</option>
+              <option value="entregas">Entregas</option>
+              <option value="ramais">Ramais</option>
+            </select>
+            <select id="auditoriaAcao" onchange="renderAuditoria()">
+              <option value="">Todas as ações</option>
+              <option value="INSERT">Criação</option>
+              <option value="UPDATE">Edição</option>
+              <option value="DELETE">Exclusão</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="carregarAuditoria(true)">Atualizar</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table id="auditoriaTable"></table></div>
+      </div>
     </section>
 
     <section class="view" id="view-ramais">
