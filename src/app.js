@@ -2403,15 +2403,14 @@ function renderRamais() {
     '<col>' +
     '<col style="width:118px">' +
     '<col style="width:215px">' +
-    '<col style="width:13%">' +
     (canManageRamais() ? '<col style="width:92px">' : '') +
     '</colgroup><thead><tr>' +
     '<th title="Emergência"></th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'setor\')">Setor / Local' + ind('setor') + '</th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'ramal\')">Ramal' + ind('ramal') + '</th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'responsavel\')">Responsável' + ind('responsavel') + '</th>' +
-    '<th>Celular</th><th>E-mail</th><th>Obs.</th>' + (canManageRamais() ? '<th></th>' : '') + '</tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canManageRamais() ? 8 : 7) + '">Nenhum ramal encontrado.</td></tr>';
+    '<th>Celular</th><th>E-mail</th>' + (canManageRamais() ? '<th></th>' : '') + '</tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canManageRamais() ? 7 : 6) + '">Nenhum ramal encontrado.</td></tr>';
   rows.forEach(r => {
     const tel = (r.celular || '').replace(/[^0-9+]/g, '');
     html += '<tr class="' + (r.emergencia ? 'emrg-row' : '') + '">' +
@@ -2422,7 +2421,6 @@ function renderRamais() {
       '<td>' + esc(r.responsavel || '—') + '</td>' +
       '<td class="mono">' + (r.celular ? '<a href="tel:' + esc(tel) + '">' + esc(fmtCelular(r.celular)) + '</a>' : '—') + '</td>' +
       '<td>' + (r.email ? '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : '—') + '</td>' +
-      '<td>' + esc(r.obs || '—') + '</td>' +
       (canManageRamais() ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormRamal(\'' + r.id + '\')', ICO.edit) + btnIcon('btn-danger', 'Excluir', 'excluirRamal(\'' + r.id + '\')', ICO.trash) + '</td>' : '') +
       '</tr>';
   });
