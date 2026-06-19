@@ -84,6 +84,16 @@ export const remote = {
     return DB;
   },
 
+  async loadArchived(name) {
+    const { data, error } = await supabase
+      .from(name)
+      .select('*')
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false });
+    if (error) throw new Error(mapDbError(name, error, 'loadArchived'));
+    return data || [];
+  },
+
   async saveRow(name, row) { await upsertRow(name, row); },
 
   async deleteRow(name, id) {

@@ -40,6 +40,13 @@ export const local = {
     return cloneForUi(DB);
   },
 
+  async loadArchived(name) {
+    let DB = read();
+    if (!DB) DB = seedDB();
+    TABLES.forEach((t) => { if (!Array.isArray(DB[t])) DB[t] = []; });
+    return (DB[name] || []).filter((row) => row.deleted_at).sort((a, b) => String(b.deleted_at || '').localeCompare(String(a.deleted_at || '')));
+  },
+
   async saveRow(name, row) {
     let DB = read();
     if (!DB) DB = seedDB();
