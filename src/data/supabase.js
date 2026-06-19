@@ -94,6 +94,22 @@ export const remote = {
     return data || [];
   },
 
+  async loadAuditLogs(options = {}) {
+    const table = String(options.table || '').trim();
+    const action = String(options.action || '').trim().toUpperCase();
+    const limit = Math.max(1, Math.min(Number(options.limit) || 80, 200));
+    let query = supabase
+      .from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (table) query = query.eq('tabela', table);
+    if (action) query = query.eq('acao', action);
+    const { data, error } = await query;
+    if (error) throw new Error(mapDbError('audit_logs', error, 'select'));
+    return data || [];
+  },
+
   async saveRow(name, row) { await upsertRow(name, row); },
 
   async deleteRow(name, id) {

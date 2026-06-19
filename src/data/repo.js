@@ -1,5 +1,5 @@
 /* Seleciona o adapter ativo. A UI so conhece esta interface:
-   loadAll(), loadArchived(name), saveRow(name, row), deleteRow(name, id), replaceAll(DB). */
+   loadAll(), loadArchived(name), loadAuditLogs(opts), saveRow(name, row), deleteRow(name, id), replaceAll(DB). */
 import { USE_SUPABASE } from '../config.js';
 import { local } from './local.js';
 import { remote } from './supabase.js';
