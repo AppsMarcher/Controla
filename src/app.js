@@ -298,10 +298,91 @@ function limparFormEntrada() {
   document.getElementById('e_tipo').value = 'interno';
 }
 
+function getEntradaFormData() {
+  return {
+    tipo: document.getElementById('e_tipo').value,
+    nome: document.getElementById('e_nome').value.trim(),
+    documento: document.getElementById('e_doc').value.trim(),
+    empresa: document.getElementById('e_empresa').value.trim(),
+    telefone: document.getElementById('e_tel').value.trim(),
+    placa: document.getElementById('e_placa').value.trim().toUpperCase(),
+    motivo: document.getElementById('e_motivo').value.trim(),
+    visitado: document.getElementById('e_visitado').value.trim(),
+    obs: document.getElementById('e_obs').value.trim()
+  };
+}
+
+function obterPendenciasCadastroEntrada(reg) {
+  const pendencias = [];
+  const docN = norm(reg.documento).replace(/[^a-z0-9]/g, '');
+  const placaN = norm(reg.placa);
+
+  if ((reg.tipo === 'visitante' || reg.tipo === 'prestador') && docN) {
+    const visitanteExiste = DB.visitantes.some((x) => norm(x.documento).replace(/[^a-z0-9]/g, '') === docN);
+    if (!visitanteExiste) pendencias.push('visitante');
+  }
+
+  if (reg.tipo === 'motorista' && docN) {
+    const motoristaExiste = DB.motoristas.some((x) => norm(x.documento).replace(/[^a-z0-9]/g, '') === docN);
+    if (!motoristaExiste) pendencias.push('motorista');
+  }
+
+  if (placaN) {
+    const veiculoExiste = DB.veiculos.some((x) => norm(x.placa) === placaN);
+    if (!veiculoExiste) pendencias.push('veiculo');
+  }
+
+  return pendencias;
+}
+
+function direcionarCadastroPendente(pendencias, reg) {
+  if (!pendencias.length) return false;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode cadastrar visitantes, motoristas ou veiculos.')) return true;
+
+  if (pendencias.includes('visitante')) {
+    showView('visitantes');
+    abrirFormVisitante({
+      nome: reg.nome,
+      documento: reg.documento,
+      telefone: reg.telefone,
+      empresa: reg.empresa,
+      obs: reg.tipo === 'prestador' ? 'Prestador de servico' : ''
+    });
+    toast('Visitante nao cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    return true;
+  }
+
+  if (pendencias.includes('motorista')) {
+    showView('motoristas');
+    abrirFormMotorista({
+      nome: reg.nome,
+      documento: reg.documento,
+      telefone: reg.telefone,
+      transportadora: reg.empresa,
+      placaPadrao: reg.placa
+    });
+    toast('Motorista nao cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    return true;
+  }
+
+  if (pendencias.includes('veiculo')) {
+    showView('veiculos');
+    abrirFormVeiculo({
+      placa: reg.placa,
+      proprietario: reg.empresa,
+      motorista: reg.tipo === 'motorista' ? reg.nome : ''
+    });
+    toast('Veiculo nao cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    return true;
+  }
+
+  return false;
+}
+
 function registrarEntrada() {
   if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nao pode registrar entradas.')) return;
-  const nome = document.getElementById('e_nome').value.trim();
-  const doc = document.getElementById('e_doc').value.trim();
+  const dadosEntrada = getEntradaFormData();
+  const { nome, documento: doc } = dadosEntrada;
   if (!nome || !doc) {
     toast('Preencha pelo menos Nome e Documento.', 'error');
     return;
@@ -313,17 +394,12 @@ function registrarEntrada() {
     toast('Entrada bloqueada: ' + jaDentro.nome + ' (doc. ' + jaDentro.documento + ') já está dentro sem registro de saída.', 'warn');
     return;
   }
+  const pendenciasCadastro = obterPendenciasCadastroEntrada(dadosEntrada);
+  if (direcionarCadastroPendente(pendenciasCadastro, dadosEntrada)) return;
+
   const reg = {
     id: uid(),
-    tipo: document.getElementById('e_tipo').value,
-    nome: nome,
-    documento: doc,
-    empresa: document.getElementById('e_empresa').value.trim(),
-    telefone: document.getElementById('e_tel').value.trim(),
-    placa: document.getElementById('e_placa').value.trim().toUpperCase(),
-    motivo: document.getElementById('e_motivo').value.trim(),
-    visitado: document.getElementById('e_visitado').value.trim(),
-    obs: document.getElementById('e_obs').value.trim(),
+    ...dadosEntrada,
     entrada: new Date().toISOString(),
     saida: null,
     status: 'Dentro'
@@ -584,20 +660,21 @@ function renderVisitantes() {
   document.getElementById('visTable').innerHTML = html + '</tbody>';
 }
 
-function abrirFormVisitante(id) {
+function abrirFormVisitante(idOrSeed) {
   if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar visitantes.')) return;
-  const v = id ? DB.visitantes.find(x => x.id === id) : null;
+  const v = typeof idOrSeed === 'string' ? DB.visitantes.find(x => x.id === idOrSeed) : null;
+  const seed = !v && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
   abrirModal(v ? 'Editar visitante' : 'Novo visitante',
     '<div class="form-grid">' +
     fotoField() +
-    campo('cv_nome', 'Nome *', v ? v.nome : '') +
-    campo('cv_doc', 'Documento *', v ? v.documento : '') +
-    campo('cv_tel', 'Telefone', v ? v.telefone : '') +
-    campo('cv_empresa', 'Empresa', v ? v.empresa : '') +
+    campo('cv_nome', 'Nome *', v ? v.nome : (seed?.nome || '')) +
+    campo('cv_doc', 'Documento *', v ? v.documento : (seed?.documento || '')) +
+    campo('cv_tel', 'Telefone', v ? v.telefone : (seed?.telefone || '')) +
+    campo('cv_empresa', 'Empresa', v ? v.empresa : (seed?.empresa || '')) +
     '<div class="field"><label>Status</label><select id="cv_ativo">' +
     '<option value="1"' + (!v || v.ativo ? ' selected' : '') + '>Ativo</option>' +
     '<option value="0"' + (v && !v.ativo ? ' selected' : '') + '>Inativo</option></select></div>' +
-    '<div class="field full"><label>Observações</label><textarea id="cv_obs">' + esc(v ? v.obs : '') + '</textarea></div>' +
+    '<div class="field full"><label>Observações</label><textarea id="cv_obs">' + esc(v ? v.obs : (seed?.obs || '')) + '</textarea></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarVisitante(' + (v ? '\'' + v.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
@@ -661,22 +738,23 @@ function renderMotoristas() {
   document.getElementById('motTable').innerHTML = html + '</tbody>';
 }
 
-function abrirFormMotorista(id) {
+function abrirFormMotorista(idOrSeed) {
   if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar motoristas.')) return;
-  const m = id ? DB.motoristas.find(x => x.id === id) : null;
+  const m = typeof idOrSeed === 'string' ? DB.motoristas.find(x => x.id === idOrSeed) : null;
+  const seed = !m && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
   const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
   abrirModal(m ? 'Editar motorista' : 'Novo motorista',
     '<div class="form-grid">' +
     fotoField() +
-    campo('cm_nome', 'Nome *', m ? m.nome : '') +
-    campo('cm_doc', 'CPF / RG / CNH *', m ? m.documento : '') +
-    campo('cm_tel', 'Telefone', m ? m.telefone : '') +
-    campo('cm_transp', 'Transportadora', m ? m.transportadora : '') +
-    campo('cm_placa', 'Placa padrão', m ? m.placaPadrao : '') +
+    campo('cm_nome', 'Nome *', m ? m.nome : (seed?.nome || '')) +
+    campo('cm_doc', 'CPF / RG / CNH *', m ? m.documento : (seed?.documento || '')) +
+    campo('cm_tel', 'Telefone', m ? m.telefone : (seed?.telefone || '')) +
+    campo('cm_transp', 'Transportadora', m ? m.transportadora : (seed?.transportadora || '')) +
+    campo('cm_placa', 'Placa padrão', m ? m.placaPadrao : (seed?.placaPadrao || '')) +
     '<div class="field"><label>Tipo de veículo</label><select id="cm_tipoVeiculo">' +
     tipos.map(t => '<option value="' + t + '"' + (m && m.tipoVeiculo === t ? ' selected' : '') + '>' + t + '</option>').join('') +
     '</select></div>' +
-    '<div class="field full"><label>Observações</label><textarea id="cm_obs">' + esc(m ? m.obs : '') + '</textarea></div>' +
+    '<div class="field full"><label>Observações</label><textarea id="cm_obs">' + esc(m ? m.obs : (seed?.obs || '')) + '</textarea></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarMotorista(' + (m ? '\'' + m.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
@@ -740,25 +818,26 @@ function renderVeiculos() {
   document.getElementById('veiTable').innerHTML = html + '</tbody>';
 }
 
-function abrirFormVeiculo(id) {
+function abrirFormVeiculo(idOrSeed) {
   if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar veiculos.')) return;
-  const v = id ? DB.veiculos.find(x => x.id === id) : null;
+  const v = typeof idOrSeed === 'string' ? DB.veiculos.find(x => x.id === idOrSeed) : null;
+  const seed = !v && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
   const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
   const motoristas = DB.motoristas.map(m => m.nome);
   abrirModal(v ? 'Editar veículo' : 'Novo veículo',
     '<div class="form-grid">' +
-    campo('cve_placa', 'Placa *', v ? v.placa : '') +
+    campo('cve_placa', 'Placa *', v ? v.placa : (seed?.placa || '')) +
     '<div class="field"><label>Tipo</label><select id="cve_tipo">' +
     tipos.map(t => '<option value="' + t + '"' + (v && v.tipo === t ? ' selected' : '') + '>' + t + '</option>').join('') +
     '</select></div>' +
-    campo('cve_modelo', 'Marca / Modelo', v ? v.modelo : '') +
-    campo('cve_cor', 'Cor', v ? v.cor : '') +
-    campo('cve_prop', 'Proprietário / Empresa', v ? v.proprietario : '') +
+    campo('cve_modelo', 'Marca / Modelo', v ? v.modelo : (seed?.modelo || '')) +
+    campo('cve_cor', 'Cor', v ? v.cor : (seed?.cor || '')) +
+    campo('cve_prop', 'Proprietário / Empresa', v ? v.proprietario : (seed?.proprietario || '')) +
     '<div class="field"><label>Motorista vinculado</label><select id="cve_motorista">' +
     '<option value="">— Nenhum —</option>' +
-    motoristas.map(n => '<option value="' + esc(n) + '"' + (v && v.motorista === n ? ' selected' : '') + '>' + esc(n) + '</option>').join('') +
+    motoristas.map(n => '<option value="' + esc(n) + '"' + ((v && v.motorista === n) || (!v && seed?.motorista === n) ? ' selected' : '') + '>' + esc(n) + '</option>').join('') +
     '</select></div>' +
-    '<div class="field full"><label>Observações</label><textarea id="cve_obs">' + esc(v ? v.obs : '') + '</textarea></div>' +
+    '<div class="field full"><label>Observações</label><textarea id="cve_obs">' + esc(v ? v.obs : (seed?.obs || '')) + '</textarea></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarVeiculo(' + (v ? '\'' + v.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
