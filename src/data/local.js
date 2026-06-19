@@ -1,7 +1,7 @@
 /* Adapter localStorage - mesma interface do adapter Supabase.
    Guarda todo o estado num unico blob (modo dev / fallback). */
 import { seedDB, seedRamais, RAMAIS_SEED_VERSION } from './seed.js';
-import { TABLES } from '../config.js';
+import { SOFT_DELETE_TABLES, TABLES } from '../config.js';
 
 const KEY = 'controlaMarcher_v1';
 
@@ -17,6 +17,14 @@ function write(DB) {
   localStorage.setItem(KEY, JSON.stringify(DB));
 }
 
+function cloneForUi(DB) {
+  const copy = structuredClone(DB);
+  SOFT_DELETE_TABLES.forEach((t) => {
+    copy[t] = (copy[t] || []).filter((row) => !row.deleted_at);
+  });
+  return copy;
+}
+
 export const local = {
   backend: 'local',
 
@@ -29,11 +37,13 @@ export const local = {
       DB.ramaisVersao = RAMAIS_SEED_VERSION;
     }
     write(DB);
-    return DB;
+    return cloneForUi(DB);
   },
 
   async saveRow(name, row) {
-    const DB = await this.loadAll();
+    let DB = read();
+    if (!DB) DB = seedDB();
+    TABLES.forEach((t) => { if (!Array.isArray(DB[t])) DB[t] = []; });
     const rows = Array.isArray(DB[name]) ? DB[name] : [];
     const idx = rows.findIndex((item) => item.id === row.id);
     if (idx >= 0) rows[idx] = row;
@@ -43,7 +53,9 @@ export const local = {
   },
 
   async deleteRow(name, id) {
-    const DB = await this.loadAll();
+    let DB = read();
+    if (!DB) DB = seedDB();
+    TABLES.forEach((t) => { if (!Array.isArray(DB[t])) DB[t] = []; });
     DB[name] = (DB[name] || []).filter((row) => row.id !== id);
     write(DB);
   },

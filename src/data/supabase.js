@@ -1,7 +1,7 @@
 /* Adapter Supabase - mesma interface do adapter localStorage.
    Os registros usam `id` em texto, entao o upsert por id funciona sem mapeamento. */
 import { supabase } from './client.js';
-import { TABLES } from '../config.js';
+import { SOFT_DELETE_TABLES, TABLES } from '../config.js';
 
 function rawDbMessage(error) {
   return String(error?.message || error?.details || error?.hint || error || '').trim();
@@ -43,7 +43,9 @@ function mapDbError(name, error, action) {
 }
 
 async function fetchTable(name) {
-  const { data, error } = await supabase.from(name).select('*');
+  let query = supabase.from(name).select('*');
+  if (SOFT_DELETE_TABLES.includes(name)) query = query.is('deleted_at', null);
+  const { data, error } = await query;
   if (error) throw new Error(mapDbError(name, error, 'select'));
   return data || [];
 }
