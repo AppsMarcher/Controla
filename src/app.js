@@ -195,6 +195,24 @@ function mascaraCelular(el) {
   el.value = fmtCelular(el.value);
 }
 
+function fmtCpf(value) {
+  const d = String(value == null ? '' : value).replace(/\D/g, '').slice(0, 11);
+  if (d.length !== 11) return String(value == null ? '' : value).trim();
+  return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
+}
+
+function bindDocumentoField(id) {
+  const input = document.getElementById(id);
+  if (!input || input.dataset.docBound) return;
+  input.dataset.docBound = '1';
+  const applyMask = () => {
+    const digits = input.value.replace(/\D/g, '');
+    if (digits.length === 11) input.value = fmtCpf(digits);
+  };
+  input.addEventListener('blur', applyMask);
+  input.addEventListener('change', applyMask);
+}
+
 function normalizeDocumento(value) {
   return String(value == null ? '' : value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -421,9 +439,9 @@ function direcionarCadastroPendente(pendencias, reg) {
 function registrarEntrada() {
   if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode registrar entradas.')) return;
   const dadosEntrada = getEntradaFormData();
-  const { nome, documento: doc } = dadosEntrada;
-  if (!nome || !doc) {
-    toast('Preencha pelo menos Nome e Documento.', 'error');
+  const { nome, documento: doc, empresa, visitado } = dadosEntrada;
+  if (!nome || !doc || !empresa || !visitado) {
+    toast('Preencha Nome, Documento, Empresa e Pessoa / setor visitado.', 'error');
     return;
   }
   const validacaoDoc = validarDocumento(doc);
@@ -743,6 +761,7 @@ function abrirFormVisitante(idOrSeed) {
     '<button class="btn btn-primary" onclick="salvarVisitante(' + (v ? '\'' + v.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
   setFotoPreview(v ? v.foto : '');
+  bindDocumentoField('cv_doc');
 }
 
 function salvarVisitante_legacy(id) {
@@ -826,6 +845,7 @@ function abrirFormMotorista(idOrSeed) {
     '<button class="btn btn-primary" onclick="salvarMotorista(' + (m ? '\'' + m.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
   setFotoPreview(m ? m.foto : '');
+  bindDocumentoField('cm_doc');
 }
 
 function salvarMotorista_legacy(id) {
@@ -1129,7 +1149,7 @@ function abrirFormEntrega(id) {
     campo('ce_placa', 'Placa', e ? e.placa : '') +
     campo('ce_nf', 'Nota fiscal / Documento', e ? e.nf : '') +
     campo('ce_volumes', 'Quantidade de volumes', e ? e.volumes : '', 'number') +
-    campo('ce_dest', 'Destinatário interno', e ? e.destinatario : '') +
+    campo('ce_dest', 'Destinatário interno *', e ? e.destinatario : '') +
     campo('ce_setor', 'Setor responsável', e ? e.setor : '') +
     '<div class="field"><label>Status</label><select id="ce_status">' +
     status.map(s => '<option value="' + s[0] + '"' + (e && e.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>').join('') +
@@ -1582,6 +1602,7 @@ function setupAutocomplete(inputId, getSugestoes, aoSelecionar) {
 setupAutocomplete('e_nome', sugestoesPessoa, preencherEntradaCom);
 setupAutocomplete('e_doc', sugestoesPessoa, preencherEntradaCom);
 setupAutocomplete('e_placa', sugestoesVeiculo, preencherEntradaCom);
+bindDocumentoField('e_doc');
 
 /* ============================================================
    ÁREA DO USUÁRIO (protótipo — perfis de acesso evoluem depois)
@@ -2291,7 +2312,9 @@ function renderEntregas() {
 function salvarEntrega(id) {
   if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode salvar entregas.')) return;
   const fornecedor = document.getElementById('ce_fornecedor').value.trim();
+  const destinatario = document.getElementById('ce_dest').value.trim();
   if (!fornecedor) { toast('Informe o fornecedor ou transportadora.', 'error'); return; }
+  if (!destinatario) { toast('Informe o destinatário interno.', 'error'); return; }
   const dados = {
     tipo: document.getElementById('ce_tipo').value,
     fornecedor,
@@ -2300,7 +2323,7 @@ function salvarEntrega(id) {
     nf: document.getElementById('ce_nf').value.trim(),
     descricao: document.getElementById('ce_desc').value.trim(),
     volumes: parseInt(document.getElementById('ce_volumes').value, 10) || 0,
-    destinatario: document.getElementById('ce_dest').value.trim(),
+    destinatario,
     setor: document.getElementById('ce_setor').value.trim(),
     status: document.getElementById('ce_status').value,
     obs: document.getElementById('ce_obs').value.trim()
