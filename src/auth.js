@@ -1,5 +1,5 @@
-/* Autenticacao + perfil. Em modo localStorage nao ha login;
-   em modo Supabase exige login e le a tabela `profiles`. */
+/* Autenticação + perfil. Em modo localStorage não há login;
+   em modo Supabase exige login e lê a tabela `profiles`. */
 import { USE_SUPABASE } from './config.js';
 import { supabase } from './data/client.js';
 
@@ -66,7 +66,7 @@ function showLogin() {
         const email = document.getElementById('loginEmail').value.trim().toLowerCase();
         err.textContent = '';
         if (!email) {
-          err.textContent = 'Informe seu e-mail para receber o link de recuperacao.';
+          err.textContent = 'Informe seu e-mail para receber o link de recuperação.';
           return;
         }
         forgotBtn.disabled = true;
@@ -75,9 +75,9 @@ function showLogin() {
           const options = redirectTo ? { redirectTo } : undefined;
           const { error } = await supabase.auth.resetPasswordForEmail(email, options);
           if (error) throw error;
-          err.textContent = 'Enviamos um link de redefinicao para seu e-mail.';
+          err.textContent = 'Enviamos um link de redefinição para seu e-mail.';
         } catch (e) {
-          err.textContent = e?.message || 'Nao foi possivel enviar o e-mail de recuperacao.';
+          err.textContent = e?.message || 'Não foi possível enviar o e-mail de recuperação.';
         } finally {
           forgotBtn.disabled = false;
         }
@@ -95,7 +95,7 @@ function showLogin() {
         const password = document.getElementById('loginPass').value;
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         btn.disabled = false;
-        if (error) { err.textContent = 'E-mail ou senha invalidos.'; return; }
+        if (error) { err.textContent = 'E-mail ou senha inválidos.'; return; }
         overlay.style.display = 'none';
         resolve(data.user);
       });
@@ -136,7 +136,7 @@ function showRecovery(userFromSession) {
           return;
         }
         if (senha !== confirmar) {
-          err.textContent = 'A confirmacao da senha nao confere.';
+          err.textContent = 'A confirmação da senha não confere.';
           return;
         }
         btn.disabled = true;
@@ -147,7 +147,7 @@ function showRecovery(userFromSession) {
           overlay.style.display = 'none';
           resolve(data.user || userFromSession);
         } catch (e) {
-          err.textContent = 'Nao foi possivel atualizar a senha.';
+          err.textContent = 'Não foi possível atualizar a senha.';
         } finally {
           btn.disabled = false;
         }
@@ -173,7 +173,7 @@ export async function currentProfile() {
   if (data) {
     if (data.ativo === false) {
       await supabase.auth.signOut({ scope: 'local' });
-      throw new Error('Usuario desativado. Procure um administrador.');
+      throw new Error('Usuário desativado. Procure um administrador.');
     }
     return data;
   }
@@ -214,7 +214,7 @@ export async function loadProfilesRemote() {
     .from('profiles')
     .select(PROFILE_FIELDS)
     .order('created_at', { ascending: true });
-  if (error) throw new Error('Falha ao carregar usuarios: ' + error.message);
+  if (error) throw new Error('Falha ao carregar usuários: ' + error.message);
   return data || [];
 }
 
@@ -225,7 +225,7 @@ export async function updateProfileRoleRemote(id, perfil) {
 }
 
 export async function inviteUserRemote(email, perfil) {
-  if (!USE_SUPABASE) throw new Error('Convite disponivel apenas com Supabase ativo.');
+  if (!USE_SUPABASE) throw new Error('Convite disponível apenas com Supabase ativo.');
   const { data, error } = await supabase.functions.invoke('invite-user', {
     body: { email, perfil }
   });
@@ -239,7 +239,7 @@ export async function updateUserStatusRemote(id, ativo) {
   const { data, error } = await supabase.functions.invoke('manage-user', {
     body: { action: 'set_active', userId: id, ativo }
   });
-  if (error) throw new Error('Falha ao atualizar status do usuario: ' + error.message);
+  if (error) throw new Error('Falha ao atualizar status do usuário: ' + error.message);
   if (data?.error) throw new Error(data.error);
   return data || {};
 }
@@ -249,7 +249,7 @@ export async function deleteUserRemote(id) {
   const { data, error } = await supabase.functions.invoke('manage-user', {
     body: { action: 'delete_user', userId: id }
   });
-  if (error) throw new Error('Falha ao excluir usuario: ' + error.message);
+  if (error) throw new Error('Falha ao excluir usuário: ' + error.message);
   if (data?.error) throw new Error(data.error);
   return data || {};
 }
@@ -257,7 +257,7 @@ export async function deleteUserRemote(id) {
 export async function logout() {
   if (USE_SUPABASE) {
     const { error } = await supabase.auth.signOut({ scope: 'local' });
-    if (error) throw new Error('Falha ao encerrar a sessao: ' + error.message);
+    if (error) throw new Error('Falha ao encerrar a sessão: ' + error.message);
   }
   try {
     sessionStorage.clear();

@@ -87,7 +87,7 @@ function canAccessView(name) {
 }
 function ensureAllowed(ok, msg) {
   if (ok) return true;
-  toast(msg || 'Seu perfil nao permite esta acao.', 'warn');
+  toast(msg || 'Seu perfil não permite esta ação.', 'warn');
   return false;
 }
 
@@ -232,7 +232,7 @@ function confirmar(texto, onYes) {
 /* ---------- Navegação ---------- */
 function showView(name) {
   if (!canAccessView(name)) {
-    toast('Seu perfil nao pode acessar esta area.', 'warn');
+    toast('Seu perfil não pode acessar esta área.', 'warn');
     name = 'dashboard';
   }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -338,7 +338,7 @@ function obterPendenciasCadastroEntrada(reg) {
 
 function direcionarCadastroPendente(pendencias, reg) {
   if (!pendencias.length) return false;
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode cadastrar visitantes, motoristas ou veiculos.')) return true;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode cadastrar visitantes, motoristas ou veículos.')) return true;
 
   if (pendencias.includes('visitante')) {
     showView('visitantes');
@@ -347,9 +347,9 @@ function direcionarCadastroPendente(pendencias, reg) {
       documento: reg.documento,
       telefone: reg.telefone,
       empresa: reg.empresa,
-      obs: reg.tipo === 'prestador' ? 'Prestador de servico' : ''
+      obs: reg.tipo === 'prestador' ? 'Prestador de serviço' : ''
     });
-    toast('Visitante nao cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    toast('Visitante não cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
     return true;
   }
 
@@ -362,7 +362,7 @@ function direcionarCadastroPendente(pendencias, reg) {
       transportadora: reg.empresa,
       placaPadrao: reg.placa
     });
-    toast('Motorista nao cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    toast('Motorista não cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
     return true;
   }
 
@@ -373,7 +373,7 @@ function direcionarCadastroPendente(pendencias, reg) {
       proprietario: reg.empresa,
       motorista: reg.tipo === 'motorista' ? reg.nome : ''
     });
-    toast('Veiculo nao cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    toast('Veículo não cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
     return true;
   }
 
@@ -381,7 +381,7 @@ function direcionarCadastroPendente(pendencias, reg) {
 }
 
 function registrarEntrada() {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nao pode registrar entradas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode registrar entradas.')) return;
   const dadosEntrada = getEntradaFormData();
   const { nome, documento: doc } = dadosEntrada;
   if (!nome || !doc) {
@@ -665,7 +665,7 @@ function renderVisitantes() {
 }
 
 function abrirFormVisitante(idOrSeed) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar visitantes.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode alterar visitantes.')) return;
   const v = typeof idOrSeed === 'string' ? DB.visitantes.find(x => x.id === idOrSeed) : null;
   const seed = !v && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
   abrirModal(v ? 'Editar visitante' : 'Novo visitante',
@@ -746,7 +746,7 @@ function renderMotoristas() {
 }
 
 function abrirFormMotorista(idOrSeed) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar motoristas.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode alterar motoristas.')) return;
   const m = typeof idOrSeed === 'string' ? DB.motoristas.find(x => x.id === idOrSeed) : null;
   const seed = !m && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
   const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
@@ -829,7 +829,7 @@ function renderVeiculos() {
 }
 
 function abrirFormVeiculo(idOrSeed) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode alterar veiculos.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode alterar veículos.')) return;
   const v = typeof idOrSeed === 'string' ? DB.veiculos.find(x => x.id === idOrSeed) : null;
   const seed = !v && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
   const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
@@ -1213,7 +1213,7 @@ function toCSV(headers, rows) {
 }
 
 function exportarHistoricoCSV() {
-  if (!ensureAllowed(canAccessReports(), 'Seu perfil nao pode gerar relatorios.')) return;
+  if (!ensureAllowed(canAccessReports(), 'Seu perfil não pode gerar relatórios.')) return;
   const rows = filtrarHistorico();
   if (!rows.length) { toast('Nenhum registro para exportar.', 'warn'); return; }
   const csv = toCSV(
@@ -1225,10 +1225,10 @@ function exportarHistoricoCSV() {
 }
 
 function exportarEntregasCSV() {
-  if (!ensureAllowed(canAccessReports(), 'Seu perfil nao pode gerar relatorios.')) return;
+  if (!ensureAllowed(canAccessReports(), 'Seu perfil não pode gerar relatórios.')) return;
   if (!DB.entregas.length) { toast('Nenhuma entrega para exportar.', 'warn'); return; }
   const csv = toCSV(
-    ['Data', 'Tipo', 'Fornecedor/Transportadora', 'Motorista', 'Placa', 'NF/Documento', 'Descricao', 'Volumes', 'Destinatario', 'Setor', 'Status', 'Observacoes'],
+    ['Data', 'Tipo', 'Fornecedor/Transportadora', 'Motorista', 'Placa', 'NF/Documento', 'Descricao', 'Volumes', 'Destinatário', 'Setor', 'Status', 'Observacoes'],
     DB.entregas.map(e => [fmtDataHora(e.data), e.tipo, e.fornecedor, e.motorista, e.placa, e.nf, e.descricao, e.volumes, e.destinatario, e.setor, e.status, e.obs])
   );
   downloadArquivo('entregas_' + dataArquivo() + '.csv', csv, 'text/csv;charset=utf-8');
@@ -1336,7 +1336,7 @@ searchInput.addEventListener('input', function () {
       '<div class="muted">' + esc(h.sub) + '</div></div>'
     ).join('');
     if (!searchResults.innerHTML) {
-      searchResults.innerHTML = '<div class="sr-empty">Nenhum resultado disponivel para o seu perfil.</div>';
+      searchResults.innerHTML = '<div class="sr-empty">Nenhum resultado disponível para o seu perfil.</div>';
     }
     searchResults.querySelectorAll('.sr-item').forEach(el => {
       el.addEventListener('click', () => {
@@ -1615,14 +1615,14 @@ async function recarregarUsuarios() {
     PERFIS_USUARIOS = await loadProfilesRemote();
     renderUsuarios();
   } catch (e) {
-    toast(e.message || 'Falha ao carregar usuarios.', 'error');
+    toast(e.message || 'Falha ao carregar usuários.', 'error');
   }
 }
 
 async function salvarPerfilUsuario(id) {
   if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem alterar perfis.')) return;
   if (USUARIO.id && id === USUARIO.id) {
-    toast('Seu proprio perfil deve ser mantido como esta nesta tela.', 'warn');
+    toast('Seu próprio perfil deve ser mantido como está nesta tela.', 'warn');
     return;
   }
   const el = document.getElementById('perfil_' + id);
@@ -1630,7 +1630,7 @@ async function salvarPerfilUsuario(id) {
   const perfilDestino = normalizeRole(el.value);
   const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
   if (!canEditUserRole(usuarioAlvo?.perfil) || !getAssignableRoles().includes(perfilDestino)) {
-    toast('Seu perfil nao pode aplicar essa alteracao.', 'warn');
+    toast('Seu perfil não pode aplicar essa alteração.', 'warn');
     return;
   }
   try {
@@ -1643,26 +1643,26 @@ async function salvarPerfilUsuario(id) {
 }
 
 function abrirAjudaCadastroUsuario_legacy() {
-  abrirModal('Cadastrar usuario',
+  abrirModal('Cadastrar usuário',
     '<div class="form-grid">' +
     '<div class="field full"><div class="report-card" style="padding:14px 16px;box-shadow:none;border:1px solid #e3e3de">' +
-    '<h4>Como cadastrar um novo usuario</h4>' +
-    '<p>O login ainda e criado no painel do Supabase. Depois ele aparece aqui para voce definir o perfil.</p>' +
+    '<h4>Como cadastrar um novo usuário</h4>' +
+    '<p>O login ainda é criado no painel do Supabase. Depois ele aparece aqui para você definir o perfil.</p>' +
     '<p><strong>Passo 1.</strong> Abra o projeto no Supabase.</p>' +
-    '<p><strong>Passo 2.</strong> Va em <strong>Authentication &gt; Users</strong>.</p>' +
+    '<p><strong>Passo 2.</strong> Vá em <strong>Authentication &gt; Users</strong>.</p>' +
     '<p><strong>Passo 3.</strong> Clique em <strong>Add user</strong> e informe e-mail e senha.</p>' +
     '<p><strong>Passo 4.</strong> Volte nesta tela e clique em <strong>Atualizar lista</strong>.</p>' +
-    '<p><strong>Passo 5.</strong> Escolha o perfil <strong>Administrador</strong>, <strong>Segurança</strong> ou <strong>Consultas</strong> e salve.</p>' +
+    '<p><strong>Passo 5.</strong> Escolha o perfil <strong>Administrador</strong>, <strong>Segurança</strong> ou <strong>Consulta</strong> e salve.</p>' +
     '</div></div>' +
-    '<div class="field full"><div class="muted">Se voce quiser, eu posso colocar depois um backend seguro para criar usuarios direto pelo app. Hoje isso nao e feito no front porque exigiria credenciais administrativas do Supabase.</div></div>' +
+    '<div class="field full"><div class="muted">Se você quiser, eu posso colocar depois um backend seguro para criar usuários direto pelo app. Hoje isso não é feito no front porque exigiria credenciais administrativas do Supabase.</div></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Fechar</button></div>', true);
 }
 
 function abrirAjudaCadastroUsuario() {
-  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuarios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuários.')) return;
   const perfisDisponiveis = getAssignableRoles();
-  abrirModal('Cadastrar usuario',
+  abrirModal('Cadastrar usuário',
     '<div class="form-grid">' +
     '<div class="field full"><label>E-mail <span class="req">*</span></label><input id="novoUserEmail" type="email" placeholder="nome@empresa.com.br"></div>' +
     '<div class="field full"><label>Perfil inicial</label><select id="novoUserPerfil">' +
@@ -1675,15 +1675,15 @@ function abrirAjudaCadastroUsuario() {
 }
 
 async function cadastrarUsuarioConvite() {
-  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuarios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuários.')) return;
   const email = document.getElementById('novoUserEmail')?.value.trim().toLowerCase();
   const perfil = normalizeRole(document.getElementById('novoUserPerfil')?.value || ROLE_CONSULTA);
   if (!email) {
-    toast('Informe o e-mail do usuario.', 'error');
+    toast('Informe o e-mail do usuário.', 'error');
     return;
   }
   if (!getAssignableRoles().includes(perfil)) {
-    toast('Seu perfil nao pode convidar usuarios com esse papel.', 'warn');
+    toast('Seu perfil não pode convidar usuários com esse papel.', 'warn');
     return;
   }
   try {
@@ -1700,7 +1700,7 @@ function renderUsuarios() {
   const host = document.getElementById('usersTable');
   if (!host) return;
   if (!canManageUsers()) {
-    host.innerHTML = '<tbody><tr class="empty-row"><td>Somente Admin e Super Admin acessam esta area.</td></tr></tbody>';
+    host.innerHTML = '<tbody><tr class="empty-row"><td>Somente Admin e Super Admin acessam esta área.</td></tr></tbody>';
     return;
   }
   const q = norm((document.getElementById('usuariosBusca')?.value || '').trim());
@@ -1710,8 +1710,8 @@ function renderUsuarios() {
       || norm(u.email || '').includes(q)
       || norm(u.perfil || '').includes(q);
   });
-  let html = '<thead><tr><th>Usuario</th><th>E-mail</th><th>Perfil atual</th><th>Trocar perfil</th><th></th></tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="5">Nenhum usuario encontrado.</td></tr>';
+  let html = '<thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil atual</th><th>Trocar perfil</th><th></th></tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="5">Nenhum usuário encontrado.</td></tr>';
   rows.forEach((u) => {
     const perfilAtual = normalizeRole(u.perfil);
     const nome = ((u.nome || '') + ' ' + (u.sobrenome || '')).trim() || 'Sem nome';
@@ -1728,13 +1728,13 @@ function renderUsuarios() {
       opcoesPerfil.map((perfil) => '<option value="' + perfil + '"' + (perfilAtual === perfil ? ' selected' : '') + '>' + perfil + '</option>').join('') +
       '</select></td>' +
       '<td>' + (locked
-        ? '<span class="users-lock">Usuario atual</span>'
+        ? '<span class="users-lock">Usuário atual</span>'
         : bloqueadoPorPapel
           ? '<span class="users-lock">Somente Super Admin</span>'
           : '<div class="users-actions">' +
               btnIcon('btn-primary', 'Salvar perfil', 'salvarPerfilUsuario(\'' + u.id + '\')', ICO.check) +
-              btnIcon(u.ativo === false ? 'btn-success' : 'btn-ghost', u.ativo === false ? 'Ativar usuario' : 'Desativar usuario', 'alternarStatusUsuario(\'' + u.id + '\')', ICO.power) +
-              btnIcon('btn-danger', 'Excluir usuario', 'excluirUsuario(\'' + u.id + '\')', ICO.trash) +
+              btnIcon(u.ativo === false ? 'btn-success' : 'btn-ghost', u.ativo === false ? 'Ativar usuário' : 'Desativar usuário', 'alternarStatusUsuario(\'' + u.id + '\')', ICO.power) +
+              btnIcon('btn-danger', 'Excluir usuário', 'excluirUsuario(\'' + u.id + '\')', ICO.trash) +
             '</div>') + '</td></tr>';
   });
   host.innerHTML = html + '</tbody>';
@@ -1742,15 +1742,15 @@ function renderUsuarios() {
 
 function abrirAreaUsuario() {
   const u = USUARIO;
-  abrirModal('Area do usuario',
+  abrirModal('Área do usuário',
     '<div class="form-grid">' +
     fotoField() +
     '<div class="field"><label>Nome <span class="req">*</span></label><input id="us_nome" type="text" maxlength="' + LIMITE_NOME + '" placeholder="Nome" value="' + esc(u.nome) + '"></div>' +
     '<div class="field"><label>Sobrenome</label><input id="us_sobrenome" type="text" maxlength="' + LIMITE_NOME + '" placeholder="Sobrenome" value="' + esc(u.sobrenome || '') + '"></div>' +
     '<div class="field"><label>Celular</label><input id="us_celular" type="text" inputmode="numeric" maxlength="13" placeholder="51 99999 9999" oninput="mascaraCelular(this)" value="' + esc(fmtCelular(u.celular)) + '"></div>' +
     '<div class="field"><label>E-mail</label><input id="us_email" type="email" placeholder="nome@marcher.com.br" value="' + esc(u.email || '') + '"></div>' +
-    '<div class="field"><label>Perfil de acesso</label><div>' + perfilBadge(u.perfil || 'Consultas') + '</div></div>' +
-    '<div class="field full"><div class="muted" style="font-size:.74rem">Seu perfil e gerenciado pelo administrador na tela Usuarios e Perfis.</div></div>' +
+    '<div class="field"><label>Perfil de acesso</label><div>' + perfilBadge(u.perfil || 'Consulta') + '</div></div>' +
+    '<div class="field full"><div class="muted" style="font-size:.74rem">Seu perfil é gerenciado pelo administrador na tela Usuários e Perfis.</div></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarUsuario()">Salvar</button>' +
     '<button class="btn btn-secondary" onclick="logoutUsuario()">Sair</button>' +
@@ -1767,47 +1767,47 @@ async function logoutUsuario() {
 }
 
 async function alternarStatusUsuario(id) {
-  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem alterar usuarios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem alterar usuários.')) return;
   const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
   if (!usuarioAlvo) return;
   if (USUARIO.id && id === USUARIO.id) {
-    toast('Voce nao pode desativar seu proprio usuario.', 'warn');
+    toast('Você não pode desativar seu próprio usuário.', 'warn');
     return;
   }
   if (!canEditUserRole(usuarioAlvo.perfil)) {
-    toast('Seu perfil nao pode alterar este usuario.', 'warn');
+    toast('Seu perfil não pode alterar este usuário.', 'warn');
     return;
   }
   const proximoAtivo = usuarioAlvo.ativo === false;
   try {
     await updateUserStatusRemote(id, proximoAtivo);
     await recarregarUsuarios();
-    toast(proximoAtivo ? 'Usuario ativado.' : 'Usuario desativado.');
+    toast(proximoAtivo ? 'Usuário ativado.' : 'Usuário desativado.');
   } catch (e) {
-    toast(e.message || 'Falha ao alterar status do usuario.', 'error');
+    toast(e.message || 'Falha ao alterar status do usuário.', 'error');
   }
 }
 
 function excluirUsuario(id) {
-  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem excluir usuarios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem excluir usuários.')) return;
   const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
   if (!usuarioAlvo) return;
   if (USUARIO.id && id === USUARIO.id) {
-    toast('Voce nao pode excluir seu proprio usuario.', 'warn');
+    toast('Você não pode excluir seu próprio usuário.', 'warn');
     return;
   }
   if (!canEditUserRole(usuarioAlvo.perfil)) {
-    toast('Seu perfil nao pode excluir este usuario.', 'warn');
+    toast('Seu perfil não pode excluir este usuário.', 'warn');
     return;
   }
   const nome = ((usuarioAlvo.nome || '') + ' ' + (usuarioAlvo.sobrenome || '')).trim() || usuarioAlvo.email || 'Sem nome';
-  confirmar('Excluir o usuario "' + nome + '"? Esta acao nao pode ser desfeita.', async function () {
+  confirmar('Excluir o usuário "' + nome + '"? Esta ação não pode ser desfeita.', async function () {
     try {
       await deleteUserRemote(id);
       await recarregarUsuarios();
-      toast('Usuario excluido.');
+      toast('Usuário excluído.');
     } catch (e) {
-      toast(e.message || 'Falha ao excluir usuario.', 'error');
+      toast(e.message || 'Falha ao excluir usuário.', 'error');
     }
   });
 }
@@ -1818,7 +1818,7 @@ async function salvarUsuario() {
   if (!nome) { toast('Informe ao menos o nome.', 'error'); return; }
   const completo = (nome + ' ' + sobrenome).trim();
   if (completo.length > LIMITE_NOME) {
-    toast('Nome + sobrenome deve ter ate ' + LIMITE_NOME + ' caracteres (atual: ' + completo.length + ').', 'error');
+    toast('Nome + sobrenome deve ter até ' + LIMITE_NOME + ' caracteres (atual: ' + completo.length + ').', 'error');
     return;
   }
   USUARIO.nome = nome;
@@ -1838,7 +1838,7 @@ async function salvarUsuario() {
 }
 
 function oferecerCadastro(reg) {
-  if (!ensureAllowed(canQuickSaveCadastros(), 'Seu perfil nao pode salvar cadastros rapidos pela entrada.')) return false;
+  if (!ensureAllowed(canQuickSaveCadastros(), 'Seu perfil não pode salvar cadastros rápidos pela entrada.')) return false;
   const propostas = [];
   const docN = norm(reg.documento).replace(/[^a-z0-9]/g, '');
   let tabela = null;
@@ -1858,7 +1858,7 @@ function oferecerCadastro(reg) {
             DB.motoristas.push(novo);
             return { entity: 'motoristas', row: novo };
           }
-          const novo = { id: uid(), nome: reg.nome, documento: reg.documento, telefone: reg.telefone || '', empresa: reg.empresa || '', obs: reg.tipo === 'prestador' ? 'Prestador de servico' : '', ativo: true };
+          const novo = { id: uid(), nome: reg.nome, documento: reg.documento, telefone: reg.telefone || '', empresa: reg.empresa || '', obs: reg.tipo === 'prestador' ? 'Prestador de serviço' : '', ativo: true };
           DB.visitantes.push(novo);
           return { entity: 'visitantes', row: novo };
         }
@@ -1870,7 +1870,7 @@ function oferecerCadastro(reg) {
     const existe = DB.veiculos.some((v) => norm(v.placa) === norm(reg.placa));
     if (!existe) {
       propostas.push({
-        titulo: 'Cadastrar veiculo',
+        titulo: 'Cadastrar veículo',
         linhas: [reg.placa, reg.empresa, reg.tipo === 'motorista' ? ('Motorista: ' + reg.nome) : ''].filter(Boolean),
         salvar: () => {
           const novo = { id: uid(), placa: reg.placa, tipo: 'outro', modelo: '', cor: '', proprietario: reg.empresa || '', motorista: reg.tipo === 'motorista' ? reg.nome : '', obs: '' };
@@ -1884,14 +1884,14 @@ function oferecerCadastro(reg) {
   if (!propostas.length) return false;
 
   const corpo =
-    '<p class="confirm-text">Estes dados ainda nao estao nos cadastros. Salvar para agilizar as proximas entradas?</p>' +
+    '<p class="confirm-text">Estes dados ainda não estão nos cadastros. Salvar para agilizar as próximas entradas?</p>' +
     propostas.map((p, i) =>
       '<label class="ac-proposta" for="prop_' + i + '"><input type="checkbox" id="prop_' + i + '" checked>' +
       '<span><strong>' + esc(p.titulo) + '</strong><br><span class="muted">' + esc(p.linhas.join(' | ')) + '</span></span></label>'
     ).join('') +
     '<div class="form-foot" style="margin-top:14px">' +
     '<button class="btn btn-primary" id="propSalvar">Salvar selecionados</button>' +
-    '<button class="btn btn-ghost" onclick="fecharModal()">Agora nao</button></div>';
+    '<button class="btn btn-ghost" onclick="fecharModal()">Agora não</button></div>';
 
   abrirModal('Atualizar cadastros', corpo, true);
   document.getElementById('propSalvar').onclick = function () {
@@ -1918,30 +1918,30 @@ function renderSaida() {
     thSort('saida', 'entrada', 'Entrada') + thSort('saida', 'tipo', 'Tipo') + thSort('saida', 'nome', 'Nome') +
     thSort('saida', 'documento', 'Documento') + thSort('saida', 'empresa', 'Empresa') + thSort('saida', 'placa', 'Placa') +
     thSort('saida', 'visitado', 'Visitado') + (canWriteOperacao() ? '<th></th>' : '') + '</tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteOperacao() ? 8 : 7) + '">Ninguem dentro no momento.</td></tr>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteOperacao() ? 8 : 7) + '">Ninguém dentro no momento.</td></tr>';
   rows.forEach(a => {
     html += '<tr><td class="mono">' + fmtDataHora(a.entrada) + '</td><td>' + badgeTipo(a.tipo) + '</td>' +
       '<td><strong>' + esc(a.nome) + '</strong></td><td class="mono">' + esc(a.documento) + '</td>' +
       '<td>' + esc(a.empresa || '—') + '</td><td class="mono">' + esc(a.placa || '—') + '</td>' +
       '<td>' + esc(a.visitado || '—') + '</td>' +
-      (canWriteOperacao() ? '<td>' + btnIcon('btn-success', 'Registrar saida', 'registrarSaida(\'' + a.id + '\')', ICO.exit) + '</td>' : '') + '</tr>';
+      (canWriteOperacao() ? '<td>' + btnIcon('btn-success', 'Registrar saída', 'registrarSaida(\'' + a.id + '\')', ICO.exit) + '</td>' : '') + '</tr>';
   });
   document.getElementById('saidaTable').innerHTML = html + '</tbody>';
 }
 
 function registrarSaida(id) {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nao pode registrar saidas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode registrar saídas.')) return;
   const a = DB.acessos.find(x => x.id === id);
   if (!a) return;
   a.saida = new Date().toISOString();
   a.status = 'Saiu';
   saveDB('acessos', a);
-  toast('Saida registrada: ' + a.nome);
+  toast('Saída registrada: ' + a.nome);
   renderAll();
 }
 
 async function salvarVisitante(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode salvar visitantes.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode salvar visitantes.')) return;
   const nome = document.getElementById('cv_nome').value.trim();
   const doc = document.getElementById('cv_doc').value.trim();
   if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
@@ -1977,17 +1977,17 @@ async function salvarVisitante(id) {
 function excluirVisitante(id) {
   if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir visitantes.')) return;
   const v = DB.visitantes.find(x => x.id === id);
-  confirmar('Excluir o visitante "' + v.nome + '"? Esta acao nao pode ser desfeita.', async function () {
+  confirmar('Excluir o visitante "' + v.nome + '"? Esta ação não pode ser desfeita.', async function () {
     DB.visitantes = DB.visitantes.filter(x => x.id !== id);
     deleteDB('visitantes', id);
     try { await deleteManagedPhoto(v.foto || ''); } catch (e) { console.warn(e); }
     renderVisitantes();
-    toast('Visitante excluido.');
+    toast('Visitante excluído.');
   });
 }
 
 async function salvarMotorista(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode salvar motoristas.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode salvar motoristas.')) return;
   const nome = document.getElementById('cm_nome').value.trim();
   const doc = document.getElementById('cm_doc').value.trim();
   if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
@@ -2024,19 +2024,19 @@ async function salvarMotorista(id) {
 function excluirMotorista(id) {
   if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir motoristas.')) return;
   const m = DB.motoristas.find(x => x.id === id);
-  confirmar('Excluir o motorista "' + m.nome + '"? Esta acao nao pode ser desfeita.', async function () {
+  confirmar('Excluir o motorista "' + m.nome + '"? Esta ação não pode ser desfeita.', async function () {
     DB.motoristas = DB.motoristas.filter(x => x.id !== id);
     deleteDB('motoristas', id);
     try { await deleteManagedPhoto(m.foto || ''); } catch (e) { console.warn(e); }
     renderMotoristas();
-    toast('Motorista excluido.');
+    toast('Motorista excluído.');
   });
 }
 
 function salvarVeiculo(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode salvar veiculos.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode salvar veículos.')) return;
   const placa = document.getElementById('cve_placa').value.trim().toUpperCase();
-  if (!placa) { toast('Informe a placa do veiculo.', 'error'); return; }
+  if (!placa) { toast('Informe a placa do veículo.', 'error'); return; }
   const dados = {
     placa,
     tipo: document.getElementById('cve_tipo').value,
@@ -2050,11 +2050,11 @@ function salvarVeiculo(id) {
   if (id) {
     row = DB.veiculos.find(x => x.id === id);
     Object.assign(row, dados);
-    toast('Veiculo atualizado.');
+    toast('Veículo atualizado.');
   } else {
     row = Object.assign({ id: uid() }, dados);
     DB.veiculos.push(row);
-    toast('Veiculo cadastrado.');
+    toast('Veículo cadastrado.');
   }
   saveDB('veiculos', row);
   fecharModal();
@@ -2062,24 +2062,24 @@ function salvarVeiculo(id) {
 }
 
 function excluirVeiculo(id) {
-  if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir veiculos.')) return;
+  if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir veículos.')) return;
   const v = DB.veiculos.find(x => x.id === id);
-  confirmar('Excluir o veiculo "' + v.placa + '"? Esta acao nao pode ser desfeita.', function () {
+  confirmar('Excluir o veículo "' + v.placa + '"? Esta ação não pode ser desfeita.', function () {
     DB.veiculos = DB.veiculos.filter(x => x.id !== id);
     deleteDB('veiculos', id);
     renderVeiculos();
-    toast('Veiculo excluido.');
+    toast('Veículo excluído.');
   });
 }
 
 function toggleEmergencia(id) {
-  if (!ensureAllowed(canFavoriteRamais(), 'Seu perfil nao pode favoritar contatos.')) return;
+  if (!ensureAllowed(canFavoriteRamais(), 'Seu perfil não pode favoritar contatos.')) return;
   const r = DB.ramais.find(x => x.id === id);
   if (!r) return;
   r.emergencia = !r.emergencia;
   saveDB('ramais', r);
   renderRamais();
-  toast(r.emergencia ? 'Adicionado a emergencia: ' + r.setor : 'Removido da emergencia: ' + r.setor);
+  toast(r.emergencia ? 'Adicionado à emergência: ' + r.setor : 'Removido da emergência: ' + r.setor);
 }
 
 function renderRamais() {
@@ -2088,7 +2088,7 @@ function renderRamais() {
   const cont = document.getElementById('ramaisEmergencia');
   if (emrg.length) {
     cont.style.display = '';
-    cont.innerHTML = '<div class="emrg-head">Contatos de emergencia</div><div class="emrg-grid">' +
+    cont.innerHTML = '<div class="emrg-head">Contatos de emergência</div><div class="emrg-grid">' +
       emrg.map(r => {
         const tel = (r.celular || '').replace(/[^0-9+]/g, '');
         return '<div class="emrg-card">' +
@@ -2120,17 +2120,17 @@ function renderRamais() {
     '<col style="width:13%">' +
     (canManageRamais() ? '<col style="width:92px">' : '') +
     '</colgroup><thead><tr>' +
-    '<th title="Emergencia"></th>' +
+    '<th title="Emergência"></th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'setor\')">Setor / Local' + ind('setor') + '</th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'ramal\')">Ramal' + ind('ramal') + '</th>' +
-    '<th class="th-sort" onclick="ordenarRamais(\'responsavel\')">Responsavel' + ind('responsavel') + '</th>' +
+    '<th class="th-sort" onclick="ordenarRamais(\'responsavel\')">Responsável' + ind('responsavel') + '</th>' +
     '<th>Celular</th><th>E-mail</th><th>Obs.</th>' + (canManageRamais() ? '<th></th>' : '') + '</tr></thead><tbody>';
   if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canManageRamais() ? 8 : 7) + '">Nenhum ramal encontrado.</td></tr>';
   rows.forEach(r => {
     const tel = (r.celular || '').replace(/[^0-9+]/g, '');
     html += '<tr class="' + (r.emergencia ? 'emrg-row' : '') + '">' +
       '<td>' + (canFavoriteRamais()
-        ? '<button class="star-btn' + (r.emergencia ? ' on' : '') + '" title="' + (r.emergencia ? 'Remover de emergencia' : 'Marcar como contato de emergencia') + '" onclick="toggleEmergencia(\'' + r.id + '\')">' + (r.emergencia ? '★' : '☆') + '</button>'
+        ? '<button class="star-btn' + (r.emergencia ? ' on' : '') + '" title="' + (r.emergencia ? 'Remover de emergência' : 'Marcar como contato de emergência') + '" onclick="toggleEmergencia(\'' + r.id + '\')">' + (r.emergencia ? '★' : '☆') + '</button>'
         : (r.emergencia ? '★' : '')) + '</td>' +
       '<td><strong>' + esc(r.setor) + '</strong></td><td class="mono">' + esc(r.ramal || '—') + '</td>' +
       '<td>' + esc(r.responsavel || '—') + '</td>' +
@@ -2175,11 +2175,11 @@ function salvarRamal(id) {
 function excluirRamal(id) {
   if (!ensureAllowed(canManageRamais(), 'Somente Admin e Super Admin podem excluir ramais.')) return;
   const r = DB.ramais.find(x => x.id === id);
-  confirmar('Excluir o ramal de "' + r.setor + '"? Esta acao nao pode ser desfeita.', function () {
+  confirmar('Excluir o ramal de "' + r.setor + '"? Esta ação não pode ser desfeita.', function () {
     DB.ramais = DB.ramais.filter(x => x.id !== id);
     deleteDB('ramais', id);
     renderRamais();
-    toast('Ramal excluido.');
+    toast('Ramal excluído.');
   });
 }
 
@@ -2193,7 +2193,7 @@ function renderEntregas() {
   let html = '<thead><tr>' +
     thSort('entregas', 'data', 'Data') + thSort('entregas', 'tipo', 'Tipo') + thSort('entregas', 'fornecedor', 'Fornecedor/Transp.') +
     thSort('entregas', 'nf', 'NF/Doc.') + thSort('entregas', 'descricao', 'Produtos') + thSort('entregas', 'volumes', 'Vol.') +
-    thSort('entregas', 'destinatario', 'Destinatario') + thSort('entregas', 'setor', 'Setor') + thSort('entregas', 'status', 'Status') +
+    thSort('entregas', 'destinatario', 'Destinatário') + thSort('entregas', 'setor', 'Setor') + thSort('entregas', 'status', 'Status') +
     (canWriteOperacao() ? '<th></th>' : '') + '</tr></thead><tbody>';
   if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteOperacao() ? 10 : 9) + '">Nenhuma entrega encontrada.</td></tr>';
   rows.forEach(e => {
@@ -2213,7 +2213,7 @@ function renderEntregas() {
 }
 
 function salvarEntrega(id) {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nao pode salvar entregas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode salvar entregas.')) return;
   const fornecedor = document.getElementById('ce_fornecedor').value.trim();
   if (!fornecedor) { toast('Informe o fornecedor ou transportadora.', 'error'); return; }
   const dados = {
@@ -2246,7 +2246,7 @@ function salvarEntrega(id) {
 }
 
 function baixarEntrega(id) {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nao pode baixar entregas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode baixar entregas.')) return;
   const e = DB.entregas.find(x => x.id === id);
   if (!e) return;
   e.status = 'entregue';
@@ -2257,14 +2257,14 @@ function baixarEntrega(id) {
 }
 
 function excluirEntrega(id) {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nao pode excluir entregas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode excluir entregas.')) return;
   const e = DB.entregas.find(x => x.id === id);
-  confirmar('Excluir a entrega de "' + e.fornecedor + '" (' + (e.nf || 'sem NF') + ')? Esta acao nao pode ser desfeita.', function () {
+  confirmar('Excluir a entrega de "' + e.fornecedor + '" (' + (e.nf || 'sem NF') + ')? Esta ação não pode ser desfeita.', function () {
     DB.entregas = DB.entregas.filter(x => x.id !== id);
     deleteDB('entregas', id);
     renderEntregas();
     renderDashboard();
-    toast('Entrega excluida.');
+    toast('Entrega excluída.');
   });
 }
 
@@ -2359,5 +2359,7 @@ export function applyRole(perfil) {
   else if (ROLE === ROLE_SEGURANCA) document.body.classList.add('role-seguranca');
   else document.body.classList.add('role-consulta');
 }
+
+
 
 
