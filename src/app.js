@@ -2400,8 +2400,8 @@ function renderRamais() {
     '<col style="width:32px">' +
     '<col style="width:18%">' +
     '<col style="width:62px">' +
-    '<col>' +
-    '<col style="width:118px">' +
+    '<col style="width:24%">' +
+    '<col style="width:132px">' +
     '<col style="width:215px">' +
     (canManageRamais() ? '<col style="width:92px">' : '') +
     '</colgroup><thead><tr>' +
