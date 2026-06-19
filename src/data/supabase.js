@@ -3,15 +3,54 @@
 import { supabase } from './client.js';
 import { TABLES } from '../config.js';
 
+function rawDbMessage(error) {
+  return String(error?.message || error?.details || error?.hint || error || '').trim();
+}
+
+function normalizeDbMessage(error) {
+  return rawDbMessage(error)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function mapDbError(name, error, action) {
+  const raw = rawDbMessage(error);
+  const msg = normalizeDbMessage(error);
+  const code = String(error?.code || '').trim();
+
+  if (msg.includes('cpf invalido')) return 'CPF inválido. Confira os dígitos informados.';
+  if (msg.includes('documento e obrigatorio')) return 'Documento obrigatório.';
+  if (msg.includes('placa e obrigatoria')) return 'Placa obrigatória.';
+  if (msg.includes('fornecedor e obrigatorio')) return 'Fornecedor / transportadora é obrigatório.';
+  if (msg.includes('destinatario interno e obrigatorio')) return 'Destinatário interno é obrigatório.';
+  if (msg.includes('nome, documento, empresa e visitado sao obrigatorios')) {
+    return 'Nome, documento, empresa e pessoa / setor visitado são obrigatórios.';
+  }
+  if (msg.includes('tipo invalido')) return 'Tipo de registro inválido.';
+
+  if (code === '23505' || msg.includes('duplicate key value')) {
+    if (msg.includes('visitantes_documento_normalizado_uq')) return 'Já existe visitante com este documento.';
+    if (msg.includes('motoristas_documento_normalizado_uq')) return 'Já existe motorista com este documento.';
+    if (msg.includes('veiculos_placa_normalizada_uq')) return 'Já existe veículo com esta placa.';
+    return 'Já existe um registro com estes dados.';
+  }
+
+  if (msg.includes('row-level security') || code === '42501') {
+    return 'Seu perfil não tem permissão para realizar esta ação.';
+  }
+
+  return `${name}${action ? ' (' + action + ')' : ''}: ${raw || 'falha desconhecida.'}`;
+}
+
 async function fetchTable(name) {
   const { data, error } = await supabase.from(name).select('*');
-  if (error) throw new Error(`${name}: ${error.message}`);
+  if (error) throw new Error(mapDbError(name, error, 'select'));
   return data || [];
 }
 
 async function upsertRow(name, row) {
   const { error } = await supabase.from(name).upsert([row]);
-  if (error) throw new Error(`${name}: ${error.message}`);
+  if (error) throw new Error(mapDbError(name, error, 'save'));
 }
 
 /* Usado apenas em restauracao total de backup. */
@@ -19,7 +58,7 @@ async function replaceTable(name, DB) {
   const rows = DB[name] || [];
   if (rows.length) {
     const { error } = await supabase.from(name).upsert(rows);
-    if (error) throw new Error(`${name}: ${error.message}`);
+    if (error) throw new Error(mapDbError(name, error, 'replace'));
   }
   const ids = rows.map((r) => r.id).filter(Boolean);
   let del = supabase.from(name).delete();
@@ -30,7 +69,7 @@ async function replaceTable(name, DB) {
     del = del.not('id', 'is', null);
   }
   const { error } = await del;
-  if (error) throw new Error(`${name} (delete): ${error.message}`);
+  if (error) throw new Error(mapDbError(name, error, 'delete'));
 }
 
 export const remote = {
@@ -47,7 +86,7 @@ export const remote = {
 
   async deleteRow(name, id) {
     const { error } = await supabase.from(name).delete().eq('id', id);
-    if (error) throw new Error(`${name} (delete): ${error.message}`);
+    if (error) throw new Error(mapDbError(name, error, 'delete'));
   },
 
   async replaceAll(DB) {
