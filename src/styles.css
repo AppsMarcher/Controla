@@ -228,6 +228,7 @@ tr.emrg-row:hover td{background:#F6CED3}
 
 /* ---------- Formulários ---------- */
 .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.form-grid-ramal{grid-template-columns:minmax(180px,1.4fr) minmax(110px,.7fr) minmax(170px,1.2fr) minmax(150px,.9fr) minmax(220px,1.3fr);align-items:end}
 .field{display:flex;flex-direction:column;gap:5px}
 .field.full{grid-column:1/-1}
 .field label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--chumbo)}
@@ -258,6 +259,7 @@ tr.emrg-row:hover td{background:#F6CED3}
   background:#fff;border-radius:var(--radius);max-width:760px;width:100%;
   box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;
 }
+.modal.modal-ramal{max-width:980px}
 .modal-head{
   background:var(--chumbo);color:#fff;padding:14px 20px;
   display:flex;justify-content:space-between;align-items:center;

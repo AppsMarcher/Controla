@@ -278,11 +278,13 @@ function toast(msg, kind) {
 function abrirModal(titulo, bodyHTML, small) {
   document.getElementById('modalTitle').textContent = titulo;
   document.getElementById('modalBody').innerHTML = bodyHTML;
+  document.getElementById('modalBox').classList.remove('modal-ramal');
   document.getElementById('modalBox').classList.toggle('small', !!small);
   document.getElementById('modalOverlay').classList.add('open');
 }
 function fecharModal() {
   if (typeof pararWebcam === 'function') pararWebcam(true);
+  document.getElementById('modalBox').classList.remove('modal-ramal');
   document.getElementById('modalOverlay').classList.remove('open');
 }
 document.getElementById('modalOverlay').addEventListener('click', function (e) {
@@ -1082,17 +1084,17 @@ function renderRamais_legacy() {
 function abrirFormRamal(id) {
   const r = id ? DB.ramais.find(x => x.id === id) : null;
   abrirModal(r ? 'Editar ramal' : 'Novo ramal',
-    '<div class="form-grid">' +
+    '<div class="form-grid form-grid-ramal">' +
     campo('cr_setor', 'Setor / Local *', r ? r.setor : '') +
     campo('cr_ramal', 'Ramal *', r ? r.ramal : '') +
     campo('cr_resp', 'Responsável', r ? r.responsavel : '') +
     '<div class="field"><label>Celular</label><input id="cr_celular" type="text" inputmode="numeric" maxlength="13" placeholder="51 99999 9999" oninput="mascaraCelular(this)" value="' + esc(r ? fmtCelular(r.celular) : '') + '"></div>' +
     '<div class="field"><label>E-mail</label><input id="cr_email" type="email" placeholder="nome@marcher.com.br" value="' + esc(r ? r.email : '') + '"></div>' +
-    '<div class="field full"><label>Observações</label><textarea id="cr_obs">' + esc(r ? r.obs : '') + '</textarea></div>' +
     '<div class="field full"><label class="ac-proposta" style="margin:0" for="cr_emrg"><input type="checkbox" id="cr_emrg"' + (r && r.emergencia ? ' checked' : '') + '><span><strong>Contato de emergência</strong><br><span class="muted">Fica em destaque no topo da Lista de Ramais</span></span></label></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarRamal(' + (r ? '\'' + r.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
+  document.getElementById('modalBox').classList.add('modal-ramal');
 }
 
 function salvarRamal_legacy(id) {
@@ -2439,7 +2441,7 @@ function salvarRamal(id) {
     celular: fmtCelular(document.getElementById('cr_celular').value),
     email: document.getElementById('cr_email').value.trim(),
     emergencia: document.getElementById('cr_emrg').checked,
-    obs: document.getElementById('cr_obs').value.trim()
+    obs: id ? ((DB.ramais.find(x => x.id === id) || {}).obs || '') : ''
   };
   let row;
   if (id) {
