@@ -281,7 +281,7 @@ tr.emrg-row:hover td{background:#F6CED3}
 @keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 /* ---------- Relatórios ---------- */
-.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-bottom:18px}
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
 .page-head-tight{margin:0 0 16px 0;align-items:center}
 .page-title-sm{font-size:1rem}
 .restore-meta{display:flex;flex-direction:column;gap:2px}
@@ -290,7 +290,7 @@ tr.emrg-row:hover td{background:#F6CED3}
 .report-card{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
 .report-card h4{font-size:.9rem;text-transform:uppercase;letter-spacing:.04em}
 .report-card p{font-size:.8rem;color:#6B6C64;flex:1}
-#arquivadosPanel{padding:18px 18px 14px}
+#arquivadosPanel{margin-top:28px;padding:18px 18px 14px}
 #arquivadosPanel .page-sub{max-width:720px}
 #arquivadosPanel .actions{align-items:center;gap:8px}
 #arquivadosPanel select{min-width:132px}
