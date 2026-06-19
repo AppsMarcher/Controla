@@ -195,6 +195,39 @@ function mascaraCelular(el) {
   el.value = fmtCelular(el.value);
 }
 
+function normalizeDocumento(value) {
+  return String(value == null ? '' : value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function normalizePlaca(value) {
+  return String(value == null ? '' : value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function isCpfValido(value) {
+  const digits = String(value == null ? '' : value).replace(/\D/g, '');
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(digits[i], 10) * (10 - i);
+  let check = (sum * 10) % 11;
+  if (check === 10) check = 0;
+  if (check !== parseInt(digits[9], 10)) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(digits[i], 10) * (11 - i);
+  check = (sum * 10) % 11;
+  if (check === 10) check = 0;
+  return check === parseInt(digits[10], 10);
+}
+
+function validarDocumento(doc) {
+  const raw = String(doc == null ? '' : doc).trim();
+  const digits = raw.replace(/\D/g, '');
+  const normalized = normalizeDocumento(raw);
+  if (!normalized) return { ok: false, msg: 'Informe um documento válido.' };
+  if (digits.length === 11 && !isCpfValido(raw)) return { ok: false, msg: 'CPF inválido. Confira os dígitos informados.' };
+  if (normalized.length < 4) return { ok: false, msg: 'Documento inválido. Confira os dados informados.' };
+  return { ok: true };
+}
+
 /* ---------- Toast ---------- */
 function toast(msg, kind) {
   const box = document.getElementById('toastBox');
@@ -306,7 +339,7 @@ function getEntradaFormData() {
     documento: document.getElementById('e_doc').value.trim(),
     empresa: document.getElementById('e_empresa').value.trim(),
     telefone: document.getElementById('e_tel').value.trim(),
-    placa: document.getElementById('e_placa').value.trim().toUpperCase(),
+    placa: normalizePlaca(document.getElementById('e_placa').value),
     motivo: document.getElementById('e_motivo').value.trim(),
     visitado: document.getElementById('e_visitado').value.trim(),
     obs: document.getElementById('e_obs').value.trim()
@@ -315,21 +348,21 @@ function getEntradaFormData() {
 
 function obterPendenciasCadastroEntrada(reg) {
   const pendencias = [];
-  const docN = norm(reg.documento).replace(/[^a-z0-9]/g, '');
-  const placaN = norm(reg.placa);
+  const docN = normalizeDocumento(reg.documento);
+  const placaN = normalizePlaca(reg.placa);
 
   if ((reg.tipo === 'visitante' || reg.tipo === 'prestador') && docN) {
-    const visitanteExiste = DB.visitantes.some((x) => norm(x.documento).replace(/[^a-z0-9]/g, '') === docN);
+    const visitanteExiste = DB.visitantes.some((x) => normalizeDocumento(x.documento) === docN);
     if (!visitanteExiste) pendencias.push('visitante');
   }
 
   if (reg.tipo === 'motorista' && docN) {
-    const motoristaExiste = DB.motoristas.some((x) => norm(x.documento).replace(/[^a-z0-9]/g, '') === docN);
+    const motoristaExiste = DB.motoristas.some((x) => normalizeDocumento(x.documento) === docN);
     if (!motoristaExiste) pendencias.push('motorista');
   }
 
   if (placaN) {
-    const veiculoExiste = DB.veiculos.some((x) => norm(x.placa) === placaN);
+    const veiculoExiste = DB.veiculos.some((x) => normalizePlaca(x.placa) === placaN);
     if (!veiculoExiste) pendencias.push('veiculo');
   }
 
@@ -339,6 +372,7 @@ function obterPendenciasCadastroEntrada(reg) {
 function direcionarCadastroPendente(pendencias, reg) {
   if (!pendencias.length) return false;
   if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode cadastrar visitantes, motoristas ou veículos.')) return true;
+  ENTRADA_PENDENTE = { reg: { ...reg }, pendencias: pendencias.slice() };
 
   if (pendencias.includes('visitante')) {
     showView('visitantes');
@@ -367,11 +401,15 @@ function direcionarCadastroPendente(pendencias, reg) {
   }
 
   if (pendencias.includes('veiculo')) {
+    const motoristaExistente = reg.tipo === 'motorista'
+      ? DB.motoristas.find((x) => normalizeDocumento(x.documento) === normalizeDocumento(reg.documento))
+      : null;
     showView('veiculos');
     abrirFormVeiculo({
       placa: reg.placa,
       proprietario: reg.empresa,
-      motorista: reg.tipo === 'motorista' ? reg.nome : ''
+      motorista: motoristaExistente ? motoristaExistente.nome : (reg.tipo === 'motorista' ? reg.nome : ''),
+      motoristaDocumento: motoristaExistente ? motoristaExistente.documento : ''
     });
     toast('Veículo não cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
     return true;
@@ -388,9 +426,14 @@ function registrarEntrada() {
     toast('Preencha pelo menos Nome e Documento.', 'error');
     return;
   }
-  const docNorm = norm(doc).replace(/[^a-z0-9]/g, '');
+  const validacaoDoc = validarDocumento(doc);
+  if (!validacaoDoc.ok) {
+    toast(validacaoDoc.msg, 'error');
+    return;
+  }
+  const docNorm = normalizeDocumento(doc);
   const jaDentro = DB.acessos.find(a => a.status === 'Dentro' &&
-    norm(a.documento).replace(/[^a-z0-9]/g, '') === docNorm);
+    normalizeDocumento(a.documento) === docNorm);
   if (jaDentro) {
     toast('Entrada bloqueada: ' + jaDentro.nome + ' (doc. ' + jaDentro.documento + ') já está dentro sem registro de saída.', 'warn');
     return;
@@ -407,10 +450,26 @@ function registrarEntrada() {
   };
   DB.acessos.push(reg);
   saveDB('acessos', reg);
+  ENTRADA_PENDENTE = null;
   limparFormEntrada();
   toast('Entrada registrada: ' + reg.nome);
   showView('dashboard');
   oferecerCadastro(reg);
+}
+
+function retomarEntradaPendenteSePossivel() {
+  if (!ENTRADA_PENDENTE?.reg) return;
+  const reg = { ...ENTRADA_PENDENTE.reg };
+  const pendencias = obterPendenciasCadastroEntrada(reg);
+  if (pendencias.length) {
+    ENTRADA_PENDENTE = { reg, pendencias: pendencias.slice() };
+    direcionarCadastroPendente(pendencias, reg);
+    return;
+  }
+  ENTRADA_PENDENTE = null;
+  showView('entrada');
+  preencherEntradaCom(reg);
+  registrarEntrada();
 }
 
 /* Após registrar uma entrada, oferece salvar o que ainda não existe nos cadastros,
@@ -521,6 +580,7 @@ function registrarSaida_legacy(id) {
    Usado nos cadastros de Visitante e Motorista.
    ============================================================ */
 let fotoBuffer = '';        // foto selecionada no formulário aberto (data URL)
+let ENTRADA_PENDENTE = null;
 let _webcamStream = null;   // stream ativa, se houver
 
 function fotoPlaceholderSVG() {
@@ -833,7 +893,8 @@ function abrirFormVeiculo(idOrSeed) {
   const v = typeof idOrSeed === 'string' ? DB.veiculos.find(x => x.id === idOrSeed) : null;
   const seed = !v && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
   const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
-  const motoristas = DB.motoristas.map(m => m.nome);
+  const motoristas = DB.motoristas.map((m) => ({ nome: m.nome, documento: m.documento }));
+  const motoristaSelecionado = normalizeDocumento(v?.motoristaDocumento || seed?.motoristaDocumento || '');
   abrirModal(v ? 'Editar veículo' : 'Novo veículo',
     '<div class="form-grid">' +
     campo('cve_placa', 'Placa *', v ? v.placa : (seed?.placa || '')) +
@@ -845,7 +906,7 @@ function abrirFormVeiculo(idOrSeed) {
     campo('cve_prop', 'Proprietário / Empresa', v ? v.proprietario : (seed?.proprietario || '')) +
     '<div class="field"><label>Motorista vinculado</label><select id="cve_motorista">' +
     '<option value="">— Nenhum —</option>' +
-    motoristas.map(n => '<option value="' + esc(n) + '"' + ((v && v.motorista === n) || (!v && seed?.motorista === n) ? ' selected' : '') + '>' + esc(n) + '</option>').join('') +
+    motoristas.map((m) => '<option value="' + esc(m.documento) + '"' + (motoristaSelecionado === normalizeDocumento(m.documento) ? ' selected' : '') + '>' + esc(m.nome) + '</option>').join('') +
     '</select></div>' +
     '<div class="field full"><label>Observações</label><textarea id="cve_obs">' + esc(v ? v.obs : (seed?.obs || '')) + '</textarea></div>' +
     '</div><div class="form-foot">' +
@@ -1411,8 +1472,11 @@ function sugestoesVeiculo(q) {
   const placasVistas = new Set();
   DB.veiculos.forEach(v => {
     if (temMatch(v.placa, q) || temMatch(v.modelo, q) || temMatch(v.proprietario, q) || temMatch(v.motorista, q)) {
-      placasVistas.add(norm(v.placa));
-      const mot = v.motorista ? DB.motoristas.find(m => m.nome === v.motorista) : null;
+      placasVistas.add(normalizePlaca(v.placa));
+      const mot = DB.motoristas.find((m) => {
+        if (v.motoristaDocumento) return normalizeDocumento(m.documento) === normalizeDocumento(v.motoristaDocumento);
+        return normalizePlaca(m.placaPadrao) && normalizePlaca(m.placaPadrao) === normalizePlaca(v.placa);
+      }) || null;
       out.push({
         tag: 'Veículo',
         label: v.placa + (v.modelo ? ' — ' + v.modelo : ''),
@@ -1429,7 +1493,7 @@ function sugestoesVeiculo(q) {
     }
   });
   DB.motoristas.forEach(m => {
-    if (m.placaPadrao && temMatch(m.placaPadrao, q) && !placasVistas.has(norm(m.placaPadrao))) {
+    if (m.placaPadrao && temMatch(m.placaPadrao, q) && !placasVistas.has(normalizePlaca(m.placaPadrao))) {
       out.push({
         tag: 'Placa padrão',
         label: m.placaPadrao + ' — ' + m.nome,
@@ -1945,6 +2009,8 @@ async function salvarVisitante(id) {
   const nome = document.getElementById('cv_nome').value.trim();
   const doc = document.getElementById('cv_doc').value.trim();
   if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
+  const validacaoDoc = validarDocumento(doc);
+  if (!validacaoDoc.ok) { toast(validacaoDoc.msg, 'error'); return; }
   const dados = {
     nome,
     documento: doc,
@@ -1969,6 +2035,7 @@ async function salvarVisitante(id) {
     fecharModal();
     renderVisitantes();
     toast(id ? 'Visitante atualizado.' : 'Visitante cadastrado.');
+    retomarEntradaPendenteSePossivel();
   } catch (e) {
     toast(e.message || 'Falha ao salvar visitante.', 'error');
   }
@@ -1991,12 +2058,14 @@ async function salvarMotorista(id) {
   const nome = document.getElementById('cm_nome').value.trim();
   const doc = document.getElementById('cm_doc').value.trim();
   if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
+  const validacaoDoc = validarDocumento(doc);
+  if (!validacaoDoc.ok) { toast(validacaoDoc.msg, 'error'); return; }
   const dados = {
     nome,
     documento: doc,
     telefone: document.getElementById('cm_tel').value.trim(),
     transportadora: document.getElementById('cm_transp').value.trim(),
-    placaPadrao: document.getElementById('cm_placa').value.trim().toUpperCase(),
+    placaPadrao: normalizePlaca(document.getElementById('cm_placa').value),
     tipoVeiculo: document.getElementById('cm_tipoVeiculo').value,
     foto: fotoBuffer,
     obs: document.getElementById('cm_obs').value.trim()
@@ -2016,6 +2085,7 @@ async function salvarMotorista(id) {
     fecharModal();
     renderMotoristas();
     toast(id ? 'Motorista atualizado.' : 'Motorista cadastrado.');
+    retomarEntradaPendenteSePossivel();
   } catch (e) {
     toast(e.message || 'Falha ao salvar motorista.', 'error');
   }
@@ -2035,15 +2105,20 @@ function excluirMotorista(id) {
 
 function salvarVeiculo(id) {
   if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode salvar veículos.')) return;
-  const placa = document.getElementById('cve_placa').value.trim().toUpperCase();
+  const placa = normalizePlaca(document.getElementById('cve_placa').value);
   if (!placa) { toast('Informe a placa do veículo.', 'error'); return; }
+  const motoristaDocumento = document.getElementById('cve_motorista').value.trim();
+  const motoristaVinculado = motoristaDocumento
+    ? DB.motoristas.find((m) => normalizeDocumento(m.documento) === normalizeDocumento(motoristaDocumento))
+    : null;
   const dados = {
     placa,
     tipo: document.getElementById('cve_tipo').value,
     modelo: document.getElementById('cve_modelo').value.trim(),
     cor: document.getElementById('cve_cor').value.trim(),
     proprietario: document.getElementById('cve_prop').value.trim(),
-    motorista: document.getElementById('cve_motorista').value.trim(),
+    motorista: motoristaVinculado ? motoristaVinculado.nome : '',
+    motoristaDocumento: motoristaVinculado ? motoristaVinculado.documento : '',
     obs: document.getElementById('cve_obs').value.trim()
   };
   let row;
@@ -2059,6 +2134,7 @@ function salvarVeiculo(id) {
   saveDB('veiculos', row);
   fecharModal();
   renderVeiculos();
+  retomarEntradaPendenteSePossivel();
 }
 
 function excluirVeiculo(id) {
