@@ -345,6 +345,25 @@
           <input id="restoreInput" type="file" accept="application/json,.json" style="display:none" onchange="restaurarJSON(event)">
         </div>
       </div>
+      <div class="panel backup-admin-only" id="arquivadosPanel">
+        <div class="page-head page-head-tight">
+          <div>
+            <div class="page-title page-title-sm">Arquivados</div>
+            <div class="page-sub">Registros removidos da operação, mas preservados para recuperação.</div>
+          </div>
+          <div class="actions">
+            <select id="arquivadosTipo" onchange="renderArquivados()">
+              <option value="visitantes">Visitantes</option>
+              <option value="motoristas">Motoristas</option>
+              <option value="veiculos">Veículos</option>
+              <option value="ramais">Ramais</option>
+              <option value="entregas">Entregas</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="carregarArquivados(true)">Atualizar</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table id="arquivadosTable"></table></div>
+      </div>
     </section>
 
     <section class="view" id="view-ramais">
