@@ -5,7 +5,7 @@
 import { repo } from './data/repo.js';
 import { deleteUserRemote, inviteUserRemote, loadProfilesRemote, logout, saveProfileRemote, updateProfileRoleRemote, updateUserStatusRemote } from './auth.js';
 import { seedRamais } from './data/seed.js';
-import { deleteManagedPhoto, uploadPhotoIfNeeded } from './data/storage.js';
+import { uploadPhotoIfNeeded } from './data/storage.js';
 
 const ROLE_SUPER_ADMIN = 'Super Admin';
 const ROLE_ADMIN = 'Admin';
@@ -25,9 +25,13 @@ function saveDB(entity, row) {
   p.catch((e) => toast('Falha ao salvar dados: ' + (e.message || e), 'error'));
 }
 
-function deleteDB(entity, id) {
-  const p = repo.deleteRow(entity, id);
-  p.catch((e) => toast('Falha ao salvar dados: ' + (e.message || e), 'error'));
+function softDeleteRow(entity, row) {
+  const archived = Object.assign({}, row, {
+    deleted_at: new Date().toISOString(),
+    deleted_by: USUARIO?.id || null
+  });
+  saveDB(entity, archived);
+  return archived;
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -2065,12 +2069,11 @@ async function salvarVisitante(id) {
 function excluirVisitante(id) {
   if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir visitantes.')) return;
   const v = DB.visitantes.find(x => x.id === id);
-  confirmar('Excluir o visitante "' + v.nome + '"? Esta ação não pode ser desfeita.', async function () {
+  confirmar('Excluir o visitante "' + v.nome + '"? O registro será arquivado para evitar perda de dados.', async function () {
     DB.visitantes = DB.visitantes.filter(x => x.id !== id);
-    deleteDB('visitantes', id);
-    try { await deleteManagedPhoto(v.foto || ''); } catch (e) { console.warn(e); }
+    softDeleteRow('visitantes', v);
     renderVisitantes();
-    toast('Visitante excluído.');
+    toast('Visitante arquivado.');
   });
 }
 
@@ -2115,12 +2118,11 @@ async function salvarMotorista(id) {
 function excluirMotorista(id) {
   if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir motoristas.')) return;
   const m = DB.motoristas.find(x => x.id === id);
-  confirmar('Excluir o motorista "' + m.nome + '"? Esta ação não pode ser desfeita.', async function () {
+  confirmar('Excluir o motorista "' + m.nome + '"? O registro será arquivado para evitar perda de dados.', async function () {
     DB.motoristas = DB.motoristas.filter(x => x.id !== id);
-    deleteDB('motoristas', id);
-    try { await deleteManagedPhoto(m.foto || ''); } catch (e) { console.warn(e); }
+    softDeleteRow('motoristas', m);
     renderMotoristas();
-    toast('Motorista excluído.');
+    toast('Motorista arquivado.');
   });
 }
 
@@ -2161,11 +2163,11 @@ function salvarVeiculo(id) {
 function excluirVeiculo(id) {
   if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir veículos.')) return;
   const v = DB.veiculos.find(x => x.id === id);
-  confirmar('Excluir o veículo "' + v.placa + '"? Esta ação não pode ser desfeita.', function () {
+  confirmar('Excluir o veículo "' + v.placa + '"? O registro será arquivado para evitar perda de dados.', function () {
     DB.veiculos = DB.veiculos.filter(x => x.id !== id);
-    deleteDB('veiculos', id);
+    softDeleteRow('veiculos', v);
     renderVeiculos();
-    toast('Veículo excluído.');
+    toast('Veículo arquivado.');
   });
 }
 
@@ -2272,11 +2274,11 @@ function salvarRamal(id) {
 function excluirRamal(id) {
   if (!ensureAllowed(canManageRamais(), 'Somente Admin e Super Admin podem excluir ramais.')) return;
   const r = DB.ramais.find(x => x.id === id);
-  confirmar('Excluir o ramal de "' + r.setor + '"? Esta ação não pode ser desfeita.', function () {
+  confirmar('Excluir o ramal de "' + r.setor + '"? O registro será arquivado para evitar perda de dados.', function () {
     DB.ramais = DB.ramais.filter(x => x.id !== id);
-    deleteDB('ramais', id);
+    softDeleteRow('ramais', r);
     renderRamais();
-    toast('Ramal excluído.');
+    toast('Ramal arquivado.');
   });
 }
 
@@ -2358,12 +2360,12 @@ function baixarEntrega(id) {
 function excluirEntrega(id) {
   if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode excluir entregas.')) return;
   const e = DB.entregas.find(x => x.id === id);
-  confirmar('Excluir a entrega de "' + e.fornecedor + '" (' + (e.nf || 'sem NF') + ')? Esta ação não pode ser desfeita.', function () {
+  confirmar('Excluir a entrega de "' + e.fornecedor + '" (' + (e.nf || 'sem NF') + ')? O registro será arquivado para evitar perda de dados.', function () {
     DB.entregas = DB.entregas.filter(x => x.id !== id);
-    deleteDB('entregas', id);
+    softDeleteRow('entregas', e);
     renderEntregas();
     renderDashboard();
-    toast('Entrega excluída.');
+    toast('Entrega arquivada.');
   });
 }
 

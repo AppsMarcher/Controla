@@ -11,3 +11,4 @@ export const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 /* Tabelas espelhadas no cache em memória (DB[chave]) e no Supabase. */
 export const TABLES = ['ramais', 'visitantes', 'motoristas', 'veiculos', 'acessos', 'entregas'];
+export const SOFT_DELETE_TABLES = ['ramais', 'visitantes', 'motoristas', 'veiculos', 'acessos', 'entregas'];
