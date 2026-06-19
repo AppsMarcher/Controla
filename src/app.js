@@ -48,6 +48,7 @@ function isSuperAdmin() { return ROLE === ROLE_SUPER_ADMIN; }
 function isAdmin() { return ROLE === ROLE_ADMIN; }
 function canManageUsers() { return isSuperAdmin() || isAdmin(); }
 function canWriteCadastros() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA; }
+function canDeleteCadastros() { return isSuperAdmin() || isAdmin(); }
 function canQuickSaveCadastros() { return canWriteCadastros(); }
 function canWriteOperacao() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_SEGURANCA; }
 function canAccessReports() { return isSuperAdmin() || isAdmin() || ROLE === ROLE_CONSULTA; }
@@ -645,16 +646,19 @@ function renderVisitantes() {
   let html = '<thead><tr>' +
     thSort('visitantes', 'nome', 'Nome') + thSort('visitantes', 'documento', 'Documento') + thSort('visitantes', 'telefone', 'Telefone') +
     thSort('visitantes', 'empresa', 'Empresa') + thSort('visitantes', 'ativo', 'Status') + thSort('visitantes', 'obs', 'Obs.') +
-    (canWriteCadastros() ? '<th></th>' : '') + '</tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteCadastros() ? 7 : 6) + '">Nenhum visitante cadastrado.</td></tr>';
+    ((canWriteCadastros() || canDeleteCadastros()) ? '<th></th>' : '') + '</tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + ((canWriteCadastros() || canDeleteCadastros()) ? 7 : 6) + '">Nenhum visitante cadastrado.</td></tr>';
   rows.forEach(v => {
+    const actions = [
+      canWriteCadastros() ? btnIcon('btn-ghost', 'Editar', 'abrirFormVisitante(\'' + v.id + '\')', ICO.edit) : '',
+      canDeleteCadastros() ? btnIcon('btn-danger', 'Excluir', 'excluirVisitante(\'' + v.id + '\')', ICO.trash) : ''
+    ].join('');
     html += '<tr><td><span class="cell-foto">' + fotoThumb(v.foto, v.nome) + '<strong>' + esc(v.nome) + '</strong></span></td><td class="mono">' + esc(v.documento) + '</td>' +
       '<td>' + esc(v.telefone || '—') + '</td><td>' + esc(v.empresa || '—') + '</td>' +
       '<td>' + (v.ativo ? '<span class="badge b-ativo">Ativo</span>' : '<span class="badge b-inativo">Inativo</span>') + '</td>' +
       '<td>' + esc(v.obs || '—') + '</td>' +
-      (canWriteCadastros()
-        ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormVisitante(\'' + v.id + '\')', ICO.edit) +
-          btnIcon('btn-danger', 'Excluir', 'excluirVisitante(\'' + v.id + '\')', ICO.trash) + '</td>'
+      (actions
+        ? '<td class="actions">' + actions + '</td>'
         : '') + '</tr>';
   });
   document.getElementById('visTable').innerHTML = html + '</tbody>';
@@ -723,16 +727,19 @@ function renderMotoristas() {
   let html = '<thead><tr>' +
     thSort('motoristas', 'nome', 'Nome') + thSort('motoristas', 'documento', 'CPF/RG/CNH') + thSort('motoristas', 'telefone', 'Telefone') +
     thSort('motoristas', 'transportadora', 'Transportadora') + thSort('motoristas', 'placaPadrao', 'Placa padrão') + thSort('motoristas', 'tipoVeiculo', 'Veículo') +
-    thSort('motoristas', 'obs', 'Obs.') + (canWriteCadastros() ? '<th></th>' : '') + '</tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteCadastros() ? 8 : 7) + '">Nenhum motorista cadastrado.</td></tr>';
+    thSort('motoristas', 'obs', 'Obs.') + ((canWriteCadastros() || canDeleteCadastros()) ? '<th></th>' : '') + '</tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + ((canWriteCadastros() || canDeleteCadastros()) ? 8 : 7) + '">Nenhum motorista cadastrado.</td></tr>';
   rows.forEach(m => {
+    const actions = [
+      canWriteCadastros() ? btnIcon('btn-ghost', 'Editar', 'abrirFormMotorista(\'' + m.id + '\')', ICO.edit) : '',
+      canDeleteCadastros() ? btnIcon('btn-danger', 'Excluir', 'excluirMotorista(\'' + m.id + '\')', ICO.trash) : ''
+    ].join('');
     html += '<tr><td><span class="cell-foto">' + fotoThumb(m.foto, m.nome) + '<strong>' + esc(m.nome) + '</strong></span></td><td class="mono">' + esc(m.documento) + '</td>' +
       '<td>' + esc(m.telefone || '—') + '</td><td>' + esc(m.transportadora || '—') + '</td>' +
       '<td class="mono">' + esc(m.placaPadrao || '—') + '</td><td>' + esc(m.tipoVeiculo || '—') + '</td>' +
       '<td>' + esc(m.obs || '—') + '</td>' +
-      (canWriteCadastros()
-        ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormMotorista(\'' + m.id + '\')', ICO.edit) +
-          btnIcon('btn-danger', 'Excluir', 'excluirMotorista(\'' + m.id + '\')', ICO.trash) + '</td>'
+      (actions
+        ? '<td class="actions">' + actions + '</td>'
         : '') + '</tr>';
   });
   document.getElementById('motTable').innerHTML = html + '</tbody>';
@@ -803,16 +810,19 @@ function renderVeiculos() {
   let html = '<thead><tr>' +
     thSort('veiculos', 'placa', 'Placa') + thSort('veiculos', 'tipo', 'Tipo') + thSort('veiculos', 'modelo', 'Marca/Modelo') +
     thSort('veiculos', 'cor', 'Cor') + thSort('veiculos', 'proprietario', 'Proprietário/Empresa') + thSort('veiculos', 'motorista', 'Motorista') +
-    thSort('veiculos', 'obs', 'Obs.') + (canWriteCadastros() ? '<th></th>' : '') + '</tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteCadastros() ? 8 : 7) + '">Nenhum veículo cadastrado.</td></tr>';
+    thSort('veiculos', 'obs', 'Obs.') + ((canWriteCadastros() || canDeleteCadastros()) ? '<th></th>' : '') + '</tr></thead><tbody>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + ((canWriteCadastros() || canDeleteCadastros()) ? 8 : 7) + '">Nenhum veículo cadastrado.</td></tr>';
   rows.forEach(v => {
+    const actions = [
+      canWriteCadastros() ? btnIcon('btn-ghost', 'Editar', 'abrirFormVeiculo(\'' + v.id + '\')', ICO.edit) : '',
+      canDeleteCadastros() ? btnIcon('btn-danger', 'Excluir', 'excluirVeiculo(\'' + v.id + '\')', ICO.trash) : ''
+    ].join('');
     html += '<tr><td class="mono"><strong>' + esc(v.placa) + '</strong></td><td>' + badgeTipo(v.tipo) + '</td>' +
       '<td>' + esc(v.modelo || '—') + '</td><td>' + esc(v.cor || '—') + '</td>' +
       '<td>' + esc(v.proprietario || '—') + '</td><td>' + esc(v.motorista || '—') + '</td>' +
       '<td>' + esc(v.obs || '—') + '</td>' +
-      (canWriteCadastros()
-        ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormVeiculo(\'' + v.id + '\')', ICO.edit) +
-          btnIcon('btn-danger', 'Excluir', 'excluirVeiculo(\'' + v.id + '\')', ICO.trash) + '</td>'
+      (actions
+        ? '<td class="actions">' + actions + '</td>'
         : '') + '</tr>';
   });
   document.getElementById('veiTable').innerHTML = html + '</tbody>';
@@ -1965,7 +1975,7 @@ async function salvarVisitante(id) {
 }
 
 function excluirVisitante(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode excluir visitantes.')) return;
+  if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir visitantes.')) return;
   const v = DB.visitantes.find(x => x.id === id);
   confirmar('Excluir o visitante "' + v.nome + '"? Esta acao nao pode ser desfeita.', async function () {
     DB.visitantes = DB.visitantes.filter(x => x.id !== id);
@@ -2012,7 +2022,7 @@ async function salvarMotorista(id) {
 }
 
 function excluirMotorista(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode excluir motoristas.')) return;
+  if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir motoristas.')) return;
   const m = DB.motoristas.find(x => x.id === id);
   confirmar('Excluir o motorista "' + m.nome + '"? Esta acao nao pode ser desfeita.', async function () {
     DB.motoristas = DB.motoristas.filter(x => x.id !== id);
@@ -2052,7 +2062,7 @@ function salvarVeiculo(id) {
 }
 
 function excluirVeiculo(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nao pode excluir veiculos.')) return;
+  if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir veiculos.')) return;
   const v = DB.veiculos.find(x => x.id === id);
   confirmar('Excluir o veiculo "' + v.placa + '"? Esta acao nao pode ser desfeita.', function () {
     DB.veiculos = DB.veiculos.filter(x => x.id !== id);
