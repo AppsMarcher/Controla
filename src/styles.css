@@ -295,6 +295,14 @@ tr.emrg-row:hover td{background:#F6CED3}
 #arquivadosPanel .actions{align-items:center;gap:8px}
 #arquivadosPanel select{min-width:132px}
 #arquivadosPanel .table-wrap{margin-top:4px}
+#auditoriaPanel{padding:18px 18px 14px}
+#auditoriaPanel .page-sub{max-width:760px}
+#auditoriaPanel .actions{align-items:center;gap:8px}
+#auditoriaPanel select{min-width:146px}
+#auditoriaPanel .table-wrap{margin-top:4px}
+.audit-meta{display:flex;flex-direction:column;gap:2px}
+.audit-main{font-weight:700}
+.audit-sub{font-size:.78rem;color:#6B6C64}
 
 .view{display:none}
 .view.active{display:block}

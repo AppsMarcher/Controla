@@ -17,6 +17,8 @@ let PERFIS_USUARIOS = [];
 const PERFIS_ACESSO = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_SEGURANCA, ROLE_CONSULTA];
 
 let DB = {};                 // cache em memória (hidratado em loadData)
+let ARQUIVADOS = { visitantes: [], motoristas: [], veiculos: [], ramais: [], entregas: [] };
+let AUDITORIA = [];
 
 export async function loadData() { DB = await repo.loadAll(); }
 
@@ -93,6 +95,17 @@ function ensureAllowed(ok, msg) {
   if (ok) return true;
   toast(msg || 'Seu perfil não permite esta ação.', 'warn');
   return false;
+}
+
+function archiveEntityLabel(tipo) {
+  return ({
+    visitantes: 'Visitantes',
+    motoristas: 'Motoristas',
+    veiculos: 'Veículos',
+    acessos: 'Acessos',
+    ramais: 'Ramais',
+    entregas: 'Entregas'
+  })[tipo] || tipo;
 }
 
 /* ============================================================
@@ -296,6 +309,10 @@ function showView(name) {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   document.getElementById('sidebar').classList.remove('open');
   if (name === 'usuarios') recarregarUsuarios();
+  if (name === 'relatorios' && canManageUsers()) {
+    carregarArquivados();
+    carregarAuditoria();
+  }
   renderAll();
 }
 document.querySelectorAll('nav button').forEach(b => {
@@ -1369,6 +1386,174 @@ function restaurarJSON(ev) {
   ev.target.value = '';
 }
 
+async function carregarArquivados(force) {
+  if (!canManageUsers()) return;
+  const tipo = document.getElementById('arquivadosTipo')?.value || 'visitantes';
+  if (!force && Array.isArray(ARQUIVADOS[tipo]) && ARQUIVADOS[tipo].length) {
+    renderArquivados();
+    return;
+  }
+  try {
+    if (!PERFIS_USUARIOS.length) PERFIS_USUARIOS = await loadProfilesRemote();
+    ARQUIVADOS[tipo] = await repo.loadArchived(tipo);
+    renderArquivados();
+  } catch (e) {
+    toast(e.message || 'Falha ao carregar arquivados.', 'error');
+  }
+}
+
+function archiveMainLabel(tipo, row) {
+  if (tipo === 'visitantes' || tipo === 'motoristas') return row.nome || 'Sem nome';
+  if (tipo === 'veiculos') return row.placa || 'Sem placa';
+  if (tipo === 'ramais') return row.setor || 'Sem setor';
+  if (tipo === 'entregas') return row.fornecedor || 'Sem fornecedor';
+  return row.id || 'Registro';
+}
+
+function archiveSubLabel(tipo, row) {
+  if (tipo === 'visitantes') return row.documento || 'Sem documento';
+  if (tipo === 'motoristas') return (row.documento || 'Sem documento') + (row.transportadora ? ' · ' + row.transportadora : '');
+  if (tipo === 'veiculos') return (row.modelo || 'Sem modelo') + (row.proprietario ? ' · ' + row.proprietario : '');
+  if (tipo === 'ramais') return (row.ramal || 'Sem ramal') + (row.responsavel ? ' · ' + row.responsavel : '');
+  if (tipo === 'entregas') return (row.nf || 'Sem NF') + (row.destinatario ? ' · ' + row.destinatario : '');
+  return row.id || '';
+}
+
+function archiveDeletedByLabel(row) {
+  const userId = row.deleted_by || '';
+  const user = (PERFIS_USUARIOS || []).find((u) => u.id === userId);
+  if (user) {
+    const nome = ((user.nome || '') + ' ' + (user.sobrenome || '')).trim();
+    return nome || user.email || userId;
+  }
+  return userId || 'Não identificado';
+}
+
+function renderArquivados() {
+  const host = document.getElementById('arquivadosTable');
+  const tipo = document.getElementById('arquivadosTipo')?.value || 'visitantes';
+  if (!host || !canManageUsers()) return;
+  const rows = Array.isArray(ARQUIVADOS[tipo]) ? ARQUIVADOS[tipo] : [];
+  let html = '<thead><tr><th>Registro</th><th>Arquivado em</th><th>Arquivado por</th><th></th></tr></thead><tbody>';
+  if (!rows.length) {
+    html += '<tr class="empty-row"><td colspan="4">Nenhum registro arquivado em ' + archiveEntityLabel(tipo).toLowerCase() + '.</td></tr>';
+  }
+  rows.forEach((row) => {
+    html += '<tr>' +
+      '<td><div class="restore-meta"><span class="restore-main">' + esc(archiveMainLabel(tipo, row)) + '</span><span class="restore-sub">' + esc(archiveSubLabel(tipo, row)) + '</span></div></td>' +
+      '<td class="mono">' + esc(fmtDataHora(row.deleted_at)) + '</td>' +
+      '<td>' + esc(archiveDeletedByLabel(row)) + '</td>' +
+      '<td class="actions">' + btnIcon('btn-success', 'Restaurar', 'restaurarArquivado(\'' + tipo + '\', \'' + row.id + '\')', ICO.check) + '</td>' +
+      '</tr>';
+  });
+  host.innerHTML = html + '</tbody>';
+}
+
+async function restaurarArquivado(tipo, id) {
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem restaurar registros arquivados.')) return;
+  const row = (ARQUIVADOS[tipo] || []).find((item) => item.id === id);
+  if (!row) return;
+  const restored = Object.assign({}, row, { deleted_at: null, deleted_by: null });
+  try {
+    await repo.saveRow(tipo, restored);
+    ARQUIVADOS[tipo] = (ARQUIVADOS[tipo] || []).filter((item) => item.id !== id);
+    await loadData();
+    renderAll();
+    renderArquivados();
+    toast('Registro restaurado em ' + archiveEntityLabel(tipo) + '.');
+  } catch (e) {
+    toast(e.message || 'Falha ao restaurar registro arquivado.', 'error');
+  }
+}
+
+async function carregarAuditoria(force) {
+  if (!canManageUsers()) return;
+  if (!force && Array.isArray(AUDITORIA) && AUDITORIA.length) {
+    renderAuditoria();
+    return;
+  }
+  try {
+    if (!PERFIS_USUARIOS.length) PERFIS_USUARIOS = await loadProfilesRemote();
+    AUDITORIA = await repo.loadAuditLogs({ limit: 120 });
+    renderAuditoria();
+  } catch (e) {
+    toast(e.message || 'Falha ao carregar auditoria.', 'error');
+  }
+}
+
+function auditActionLabel(action) {
+  const key = String(action || '').toUpperCase();
+  if (key === 'INSERT') return 'Criação';
+  if (key === 'UPDATE') return 'Edição';
+  if (key === 'DELETE') return 'Exclusão';
+  return key || 'Ação';
+}
+
+function auditActionBadge(action) {
+  const key = String(action || '').toUpperCase();
+  const cls = key === 'INSERT' ? 'b-dentro' : key === 'DELETE' ? 'b-problema' : 'b-pendente';
+  return '<span class="badge ' + cls + '">' + auditActionLabel(key) + '</span>';
+}
+
+function auditActorLabel(row) {
+  const userId = row.actor_user_id || '';
+  const user = (PERFIS_USUARIOS || []).find((u) => u.id === userId);
+  if (user) {
+    const nome = ((user.nome || '') + ' ' + (user.sobrenome || '')).trim();
+    return nome || user.email || userId;
+  }
+  return row.actor_role || userId || 'Sistema';
+}
+
+function pickAuditRecord(row) {
+  return row.new_data || row.old_data || {};
+}
+
+function auditMainLabel(row) {
+  const ref = pickAuditRecord(row);
+  if (row.tabela === 'visitantes' || row.tabela === 'motoristas') return ref.nome || 'Sem nome';
+  if (row.tabela === 'veiculos') return ref.placa || 'Sem placa';
+  if (row.tabela === 'acessos') return ref.nome || 'Sem nome';
+  if (row.tabela === 'ramais') return ref.setor || 'Sem setor';
+  if (row.tabela === 'entregas') return ref.fornecedor || 'Sem fornecedor';
+  return row.registro_id || 'Registro';
+}
+
+function auditSubLabel(row) {
+  const ref = pickAuditRecord(row);
+  if (row.tabela === 'visitantes') return ref.documento || 'Sem documento';
+  if (row.tabela === 'motoristas') return (ref.documento || 'Sem documento') + (ref.transportadora ? ' · ' + ref.transportadora : '');
+  if (row.tabela === 'veiculos') return (ref.modelo || 'Sem modelo') + (ref.proprietario ? ' · ' + ref.proprietario : '');
+  if (row.tabela === 'acessos') return (ref.documento || 'Sem documento') + (ref.empresa ? ' · ' + ref.empresa : '');
+  if (row.tabela === 'ramais') return (ref.ramal || 'Sem ramal') + (ref.responsavel ? ' · ' + ref.responsavel : '');
+  if (row.tabela === 'entregas') return (ref.nf || 'Sem NF') + (ref.destinatario ? ' · ' + ref.destinatario : '');
+  return row.registro_id || '';
+}
+
+function renderAuditoria() {
+  const host = document.getElementById('auditoriaTable');
+  const tabela = document.getElementById('auditoriaTabela')?.value || '';
+  const acao = document.getElementById('auditoriaAcao')?.value || '';
+  if (!host || !canManageUsers()) return;
+  const rows = (AUDITORIA || []).filter((row) =>
+    (!tabela || row.tabela === tabela) &&
+    (!acao || String(row.acao || '').toUpperCase() === acao)
+  );
+  let html = '<thead><tr><th>Ação</th><th>Registro</th><th>Usuário</th><th>Data / hora</th></tr></thead><tbody>';
+  if (!rows.length) {
+    html += '<tr class="empty-row"><td colspan="4">Nenhum evento encontrado para os filtros aplicados.</td></tr>';
+  }
+  rows.forEach((row) => {
+    html += '<tr>' +
+      '<td><div class="audit-meta"><span>' + auditActionBadge(row.acao) + '</span><span class="audit-sub">' + esc(archiveEntityLabel(row.tabela)) + '</span></div></td>' +
+      '<td><div class="audit-meta"><span class="audit-main">' + esc(auditMainLabel(row)) + '</span><span class="audit-sub">' + esc(auditSubLabel(row)) + '</span></div></td>' +
+      '<td>' + esc(auditActorLabel(row)) + '</td>' +
+      '<td class="mono">' + esc(fmtDataHora(row.created_at)) + '</td>' +
+      '</tr>';
+  });
+  host.innerHTML = html + '</tbody>';
+}
+
 /* ============================================================
    BUSCA GLOBAL
    ============================================================ */
@@ -2419,6 +2604,8 @@ Object.assign(window, {
   removerFoto,
   renderEntregas,
   renderHistorico,
+  renderArquivados,
+  renderAuditoria,
   renderMotoristas,
   renderRamais,
   renderSaida,
@@ -2426,6 +2613,8 @@ Object.assign(window, {
   renderVeiculos,
   renderVisitantes,
   recarregarUsuarios,
+  carregarAuditoria,
+  restaurarArquivado,
   restaurarJSON,
   alternarStatusUsuario,
   salvarEntrega,
