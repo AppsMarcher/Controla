@@ -263,15 +263,31 @@ function validarDocumento(doc) {
   return { ok: true };
 }
 
-/* ---------- Toast ---------- */
+/* ---------- Debounce ---------- */
+function debounce(fn, ms) {
+  let t;
+  return function (...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), ms); };
+}
+
+/* ---------- Toast (fila máx. 3 — remove o mais antigo se ultrapassar) ---------- */
+const _toastAtivos = [];
 function toast(msg, kind) {
   const box = document.getElementById('toastBox');
+  if (_toastAtivos.length >= 3) {
+    const antigo = _toastAtivos.shift();
+    antigo.remove();
+  }
   const el = document.createElement('div');
   el.className = 'toast' + (kind ? ' ' + kind : '');
   el.textContent = msg;
   box.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 2800);
-  setTimeout(() => el.remove(), 3200);
+  _toastAtivos.push(el);
+  const remover = () => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .3s';
+    setTimeout(() => { el.remove(); const i = _toastAtivos.indexOf(el); if (i !== -1) _toastAtivos.splice(i, 1); }, 320);
+  };
+  setTimeout(remover, 2800);
 }
 
 /* ---------- Modal ---------- */
@@ -513,108 +529,9 @@ function retomarEntradaPendenteSePossivel() {
   registrarEntrada();
 }
 
-/* Após registrar uma entrada, oferece salvar o que ainda não existe nos cadastros,
-   mantendo os vínculos (motorista + veículo já saem linkados entre si). */
-function oferecerCadastro_legacy(reg) {
-  const propostas = [];
-  const docN = norm(reg.documento).replace(/[^a-z0-9]/g, '');
-
-  // ----- Pessoa -----
-  let tabela = null, rotulo = '';
-  if (reg.tipo === 'motorista') { tabela = 'motoristas'; rotulo = 'motorista'; }
-  else if (reg.tipo === 'visitante' || reg.tipo === 'prestador') { tabela = 'visitantes'; rotulo = 'visitante'; }
-
-  if (tabela && docN) {
-    const existe = DB[tabela].some(x => norm(x.documento).replace(/[^a-z0-9]/g, '') === docN);
-    if (!existe) {
-      propostas.push({
-        titulo: 'Cadastrar ' + rotulo,
-        linhas: [reg.nome, reg.documento, reg.empresa, reg.telefone].filter(Boolean),
-        salvar: () => {
-          if (tabela === 'motoristas') {
-            DB.motoristas.push({ id: uid(), nome: reg.nome, documento: reg.documento, telefone: reg.telefone || '', transportadora: reg.empresa || '', placaPadrao: reg.placa || '', tipoVeiculo: 'outro', obs: '', ativo: true });
-          } else {
-            DB.visitantes.push({ id: uid(), nome: reg.nome, documento: reg.documento, telefone: reg.telefone || '', empresa: reg.empresa || '', obs: reg.tipo === 'prestador' ? 'Prestador de serviço' : '', ativo: true });
-          }
-        }
-      });
-    }
-  }
-
-  // ----- Veículo -----
-  if (reg.placa) {
-    const placaN = norm(reg.placa);
-    const existe = DB.veiculos.some(v => norm(v.placa) === placaN);
-    if (!existe) {
-      propostas.push({
-        titulo: 'Cadastrar veículo',
-        linhas: [reg.placa, reg.empresa, reg.tipo === 'motorista' ? ('Motorista: ' + reg.nome) : ''].filter(Boolean),
-        salvar: () => {
-          DB.veiculos.push({ id: uid(), placa: reg.placa, tipo: 'outro', modelo: '', cor: '', proprietario: reg.empresa || '', motorista: reg.tipo === 'motorista' ? reg.nome : '', obs: '' });
-        }
-      });
-    }
-  }
-
-  if (!propostas.length) return false;
-
-  const corpo =
-    '<p class="confirm-text">Estes dados ainda não estão nos cadastros. Salvar para agilizar as próximas entradas?</p>' +
-    propostas.map((p, i) =>
-      '<label class="ac-proposta" for="prop_' + i + '"><input type="checkbox" id="prop_' + i + '" checked>' +
-      '<span><strong>' + esc(p.titulo) + '</strong><br><span class="muted">' + esc(p.linhas.join(' · ')) + '</span></span></label>'
-    ).join('') +
-    '<div class="form-foot" style="margin-top:14px">' +
-    '<button class="btn btn-primary" id="propSalvar">Salvar selecionados</button>' +
-    '<button class="btn btn-ghost" onclick="fecharModal()">Agora não</button></div>';
-
-  abrirModal('Atualizar cadastros', corpo, true);
-  document.getElementById('propSalvar').onclick = function () {
-    let n = 0;
-    propostas.forEach((p, i) => {
-      if (document.getElementById('prop_' + i).checked) { p.salvar(); n++; }
-    });
-    if (n) { saveDB(); renderAll(); toast(n === 1 ? 'Cadastro salvo.' : n + ' cadastros salvos.'); }
-    fecharModal();
-  };
-  return true;
-}
-
 /* ============================================================
    SAÍDA
    ============================================================ */
-function renderSaida_legacy() {
-  const q = norm(document.getElementById('saidaBusca').value);
-  let rows = DB.acessos.filter(a => a.status === 'Dentro');
-  if (q) {
-    rows = rows.filter(a =>
-      norm(a.nome).includes(q) || norm(a.documento).includes(q) || norm(a.placa).includes(q));
-  }
-  rows = sortRows(rows, 'saida');
-  let html = '<thead><tr>' +
-    thSort('saida', 'entrada', 'Entrada') + thSort('saida', 'tipo', 'Tipo') + thSort('saida', 'nome', 'Nome') +
-    thSort('saida', 'documento', 'Documento') + thSort('saida', 'empresa', 'Empresa') + thSort('saida', 'placa', 'Placa') +
-    thSort('saida', 'visitado', 'Visitado') + '<th></th></tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="8">Ninguém dentro no momento.</td></tr>';
-  rows.forEach(a => {
-    html += '<tr><td class="mono">' + fmtDataHora(a.entrada) + '</td><td>' + badgeTipo(a.tipo) + '</td>' +
-      '<td><strong>' + esc(a.nome) + '</strong></td><td class="mono">' + esc(a.documento) + '</td>' +
-      '<td>' + esc(a.empresa || '—') + '</td><td class="mono">' + esc(a.placa || '—') + '</td>' +
-      '<td>' + esc(a.visitado || '—') + '</td>' +
-      '<td>' + btnIcon('btn-success', 'Registrar saída', 'registrarSaida(\'' + a.id + '\')', ICO.exit) + '</td></tr>';
-  });
-  document.getElementById('saidaTable').innerHTML = html + '</tbody>';
-}
-
-function registrarSaida_legacy(id) {
-  const a = DB.acessos.find(x => x.id === id);
-  if (!a) return;
-  a.saida = new Date().toISOString();
-  a.status = 'Saiu';
-  saveDB('acessos');
-  toast('Saída registrada: ' + a.nome);
-  renderAll();
-}
 
 /* ============================================================
    FOTO — upload (com redução) + predisposição p/ webcam
@@ -690,6 +607,13 @@ function carregarFoto(ev) {
 }
 
 function removerFoto() { setFotoPreview(''); }
+
+function setFotoCarregando(on) {
+  const prev = document.getElementById('fotoPreview');
+  const btn = document.querySelector('#modalBody .btn-primary');
+  if (prev) prev.classList.toggle('foto-loading', on);
+  if (btn) { btn.disabled = on; btn.textContent = on ? 'Enviando…' : 'Salvar'; }
+}
 
 /* ----- Webcam (predisposição funcional) ----- */
 function capturarFotoWebcam() {
@@ -787,35 +711,6 @@ function abrirFormVisitante(idOrSeed) {
   bindDocumentoField('cv_doc');
 }
 
-function salvarVisitante_legacy(id) {
-  const nome = document.getElementById('cv_nome').value.trim();
-  const doc = document.getElementById('cv_doc').value.trim();
-  if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
-  const dados = {
-    nome: nome, documento: doc,
-    telefone: document.getElementById('cv_tel').value.trim(),
-    empresa: document.getElementById('cv_empresa').value.trim(),
-    obs: document.getElementById('cv_obs').value.trim(),
-    foto: fotoBuffer,
-    ativo: document.getElementById('cv_ativo').value === '1'
-  };
-  if (id) {
-    Object.assign(DB.visitantes.find(x => x.id === id), dados);
-    toast('Visitante atualizado.');
-  } else {
-    DB.visitantes.push(Object.assign({ id: uid() }, dados));
-    toast('Visitante cadastrado.');
-  }
-  saveDB('visitantes'); fecharModal(); renderVisitantes();
-}
-
-function excluirVisitante_legacy(id) {
-  const v = DB.visitantes.find(x => x.id === id);
-  confirmar('Excluir o visitante "' + v.nome + '"? Esta ação não pode ser desfeita.', function () {
-    DB.visitantes = DB.visitantes.filter(x => x.id !== id);
-    saveDB('visitantes'); renderVisitantes(); toast('Visitante excluído.');
-  });
-}
 
 /* ============================================================
    CRUD — MOTORISTAS
@@ -871,36 +766,6 @@ function abrirFormMotorista(idOrSeed) {
   bindDocumentoField('cm_doc');
 }
 
-function salvarMotorista_legacy(id) {
-  const nome = document.getElementById('cm_nome').value.trim();
-  const doc = document.getElementById('cm_doc').value.trim();
-  if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
-  const dados = {
-    nome: nome, documento: doc,
-    telefone: document.getElementById('cm_tel').value.trim(),
-    transportadora: document.getElementById('cm_transp').value.trim(),
-    placaPadrao: document.getElementById('cm_placa').value.trim().toUpperCase(),
-    tipoVeiculo: document.getElementById('cm_tipoVeiculo').value,
-    foto: fotoBuffer,
-    obs: document.getElementById('cm_obs').value.trim()
-  };
-  if (id) {
-    Object.assign(DB.motoristas.find(x => x.id === id), dados);
-    toast('Motorista atualizado.');
-  } else {
-    DB.motoristas.push(Object.assign({ id: uid() }, dados));
-    toast('Motorista cadastrado.');
-  }
-  saveDB('motoristas'); fecharModal(); renderMotoristas();
-}
-
-function excluirMotorista_legacy(id) {
-  const m = DB.motoristas.find(x => x.id === id);
-  confirmar('Excluir o motorista "' + m.nome + '"? Esta ação não pode ser desfeita.', function () {
-    DB.motoristas = DB.motoristas.filter(x => x.id !== id);
-    saveDB('motoristas'); renderMotoristas(); toast('Motorista excluído.');
-  });
-}
 
 /* ============================================================
    CRUD — VEÍCULOS
@@ -957,35 +822,6 @@ function abrirFormVeiculo(idOrSeed) {
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
 }
 
-function salvarVeiculo_legacy(id) {
-  const placa = document.getElementById('cve_placa').value.trim().toUpperCase();
-  if (!placa) { toast('Informe a placa do veículo.', 'error'); return; }
-  const dados = {
-    placa: placa,
-    tipo: document.getElementById('cve_tipo').value,
-    modelo: document.getElementById('cve_modelo').value.trim(),
-    cor: document.getElementById('cve_cor').value.trim(),
-    proprietario: document.getElementById('cve_prop').value.trim(),
-    motorista: document.getElementById('cve_motorista').value,
-    obs: document.getElementById('cve_obs').value.trim()
-  };
-  if (id) {
-    Object.assign(DB.veiculos.find(x => x.id === id), dados);
-    toast('Veículo atualizado.');
-  } else {
-    DB.veiculos.push(Object.assign({ id: uid() }, dados));
-    toast('Veículo cadastrado.');
-  }
-  saveDB('veiculos'); fecharModal(); renderVeiculos();
-}
-
-function excluirVeiculo_legacy(id) {
-  const v = DB.veiculos.find(x => x.id === id);
-  confirmar('Excluir o veículo de placa "' + v.placa + '"? Esta ação não pode ser desfeita.', function () {
-    DB.veiculos = DB.veiculos.filter(x => x.id !== id);
-    saveDB('veiculos'); renderVeiculos(); toast('Veículo excluído.');
-  });
-}
 
 /* ============================================================
    CRUD — RAMAIS
@@ -1007,80 +843,6 @@ function toggleSoEmrg() {
   renderRamais();
 }
 
-function toggleEmergencia_legacy(id) {
-  const r = DB.ramais.find(x => x.id === id);
-  if (!r) return;
-  r.emergencia = !r.emergencia;
-  saveDB('ramais');
-  renderRamais();
-  toast(r.emergencia ? 'Adicionado à emergência: ' + r.setor : 'Removido da emergência: ' + r.setor);
-}
-
-function renderRamais_legacy() {
-  const sortPt = (a, b, f) => String(a[f] || '').localeCompare(String(b[f] || ''), 'pt', { numeric: true, sensitivity: 'base' });
-
-  /* ---- Faixa de contatos de emergência (destaque no topo) ---- */
-  const emrg = DB.ramais.filter(r => r.emergencia).sort((a, b) => sortPt(a, b, 'setor'));
-  const cont = document.getElementById('ramaisEmergencia');
-  if (emrg.length) {
-    cont.style.display = '';
-    cont.innerHTML = '<div class="emrg-head">⚠ Contatos de emergência</div><div class="emrg-grid">' +
-      emrg.map(r => {
-        const tel = (r.celular || '').replace(/[^0-9+]/g, '');
-        return '<div class="emrg-card">' +
-          '<div class="ec-setor">' + esc(r.setor) + '</div>' +
-          '<div class="ec-nome">' + esc(r.responsavel || '—') + '</div>' +
-          '<div class="ec-linha">Ramal <strong>' + esc(r.ramal || '—') + '</strong></div>' +
-          (r.celular ? '<div class="ec-linha">📱 <a href="tel:' + esc(tel) + '">' + esc(fmtCelular(r.celular)) + '</a></div>' : '') +
-          '</div>';
-      }).join('') + '</div>';
-  } else {
-    cont.style.display = 'none';
-    cont.innerHTML = '';
-  }
-
-  /* ---- Tabela ---- */
-  const q = norm(document.getElementById('ramalBusca').value);
-  let rows = DB.ramais.slice();
-  if (ramalSoEmrg) rows = rows.filter(r => r.emergencia);
-  if (q) rows = rows.filter(r =>
-    norm(r.setor).includes(q) || norm(r.ramal).includes(q) || norm(r.responsavel).includes(q) ||
-    norm(r.celular).includes(q) || norm(r.email).includes(q));
-  rows.sort((a, b) => ramalSort.dir * sortPt(a, b, ramalSort.col));
-
-  const ind = c => ramalSort.col === c ? ' <span class="sort-ind">' + (ramalSort.dir > 0 ? '▲' : '▼') + '</span>' : '';
-  let html = '<colgroup>' +
-    '<col style="width:32px">' +        // estrela
-    '<col style="width:18%">' +         // setor
-    '<col style="width:62px">' +        // ramal
-    '<col>' +                           // responsável (flex)
-    '<col style="width:118px">' +       // celular (xx xxxxx xxxx)
-    '<col style="width:215px">' +       // e-mail (nome@marcher.com.br)
-    '<col style="width:13%">' +         // obs
-    '<col style="width:92px">' +        // ações (ícones)
-    '</colgroup>' +
-    '<thead><tr>' +
-    '<th title="Emergência"></th>' +
-    '<th class="th-sort" onclick="ordenarRamais(\'setor\')">Setor / Local' + ind('setor') + '</th>' +
-    '<th class="th-sort" onclick="ordenarRamais(\'ramal\')">Ramal' + ind('ramal') + '</th>' +
-    '<th class="th-sort" onclick="ordenarRamais(\'responsavel\')">Responsável' + ind('responsavel') + '</th>' +
-    '<th>Celular</th><th>E-mail</th><th>Obs.</th><th></th></tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="8">Nenhum ramal encontrado.</td></tr>';
-  rows.forEach(r => {
-    const tel = (r.celular || '').replace(/[^0-9+]/g, '');
-    html += '<tr class="' + (r.emergencia ? 'emrg-row' : '') + '">' +
-      '<td><button class="star-btn' + (r.emergencia ? ' on' : '') + '" title="' + (r.emergencia ? 'Remover de emergência' : 'Marcar como contato de emergência') + '" onclick="toggleEmergencia(\'' + r.id + '\')">' + (r.emergencia ? '★' : '☆') + '</button></td>' +
-      '<td><strong>' + esc(r.setor) + '</strong></td><td class="mono">' + esc(r.ramal || '—') + '</td>' +
-      '<td>' + esc(r.responsavel || '—') + '</td>' +
-      '<td class="mono">' + (r.celular ? '<a href="tel:' + esc(tel) + '">' + esc(fmtCelular(r.celular)) + '</a>' : '—') + '</td>' +
-      '<td>' + (r.email ? '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : '—') + '</td>' +
-      '<td>' + esc(r.obs || '—') + '</td>' +
-      '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormRamal(\'' + r.id + '\')', ICO.edit) +
-      btnIcon('btn-danger', 'Excluir', 'excluirRamal(\'' + r.id + '\')', ICO.trash) + '</td></tr>';
-  });
-  document.getElementById('ramaisTable').innerHTML = html + '</tbody>';
-}
-
 function abrirFormRamal(id) {
   const r = id ? DB.ramais.find(x => x.id === id) : null;
   abrirModal(r ? 'Editar ramal' : 'Novo ramal',
@@ -1097,67 +859,10 @@ function abrirFormRamal(id) {
   document.getElementById('modalBox').classList.add('modal-ramal');
 }
 
-function salvarRamal_legacy(id) {
-  const setor = document.getElementById('cr_setor').value.trim();
-  const ramal = document.getElementById('cr_ramal').value.trim();
-  if (!setor || !ramal) { toast('Preencha Setor e Ramal.', 'error'); return; }
-  const dados = {
-    setor: setor, ramal: ramal,
-    responsavel: document.getElementById('cr_resp').value.trim(),
-    celular: fmtCelular(document.getElementById('cr_celular').value),
-    email: document.getElementById('cr_email').value.trim(),
-    emergencia: document.getElementById('cr_emrg').checked,
-    obs: document.getElementById('cr_obs').value.trim()
-  };
-  if (id) {
-    Object.assign(DB.ramais.find(x => x.id === id), dados);
-    toast('Ramal atualizado.');
-  } else {
-    DB.ramais.push(Object.assign({ id: uid() }, dados));
-    toast('Ramal cadastrado.');
-  }
-  saveDB('ramais'); fecharModal(); renderRamais();
-}
-
-function excluirRamal_legacy(id) {
-  const r = DB.ramais.find(x => x.id === id);
-  confirmar('Excluir o ramal de "' + r.setor + '"? Esta ação não pode ser desfeita.', function () {
-    DB.ramais = DB.ramais.filter(x => x.id !== id);
-    saveDB('ramais'); renderRamais(); toast('Ramal excluído.');
-  });
-}
 
 /* ============================================================
    ENTREGAS
    ============================================================ */
-function renderEntregas_legacy() {
-  const q = norm(document.getElementById('entregaBusca').value);
-  const st = document.getElementById('entregaStatusFiltro').value;
-  let rows = DB.entregas.slice();
-  if (q) rows = rows.filter(e => norm(e.fornecedor).includes(q) || norm(e.nf).includes(q) ||
-    norm(e.motorista).includes(q) || norm(e.placa).includes(q) || norm(e.descricao).includes(q));
-  if (st) rows = rows.filter(e => e.status === st);
-  rows = sortRows(rows, 'entregas');
-  let html = '<thead><tr>' +
-    thSort('entregas', 'data', 'Data') + thSort('entregas', 'tipo', 'Tipo') + thSort('entregas', 'fornecedor', 'Fornecedor/Transp.') +
-    thSort('entregas', 'nf', 'NF/Doc.') + thSort('entregas', 'descricao', 'Produtos') + thSort('entregas', 'volumes', 'Vol.') +
-    thSort('entregas', 'destinatario', 'Destinatário') + thSort('entregas', 'setor', 'Setor') + thSort('entregas', 'status', 'Status') +
-    '<th></th></tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="10">Nenhuma entrega encontrada.</td></tr>';
-  rows.forEach(e => {
-    html += '<tr><td class="mono">' + fmtDataHora(e.data) + '</td><td>' + badgeTipo(e.tipo) + '</td>' +
-      '<td><strong>' + esc(e.fornecedor) + '</strong></td><td class="mono">' + esc(e.nf || '—') + '</td>' +
-      '<td>' + esc(e.descricao || '—') + '</td><td class="mono">' + esc(e.volumes) + '</td>' +
-      '<td>' + esc(e.destinatario || '—') + '</td><td>' + esc(e.setor || '—') + '</td>' +
-      '<td>' + badgeStatus(e.status) + '</td><td class="actions">' +
-      (e.status !== 'entregue' && e.status !== 'cancelado'
-        ? btnIcon('btn-success', 'Marcar como entregue', 'baixarEntrega(\'' + e.id + '\')', ICO.check) : '') +
-      btnIcon('btn-ghost', 'Editar', 'abrirFormEntrega(\'' + e.id + '\')', ICO.edit) +
-      btnIcon('btn-danger', 'Excluir', 'excluirEntrega(\'' + e.id + '\')', ICO.trash) + '</td></tr>';
-  });
-  document.getElementById('entregasTable').innerHTML = html + '</tbody>';
-}
-
 function abrirFormEntrega(id) {
   const e = id ? DB.entregas.find(x => x.id === id) : null;
   const tipos = [['recebimento', 'Recebimento'], ['retirada', 'Retirada'], ['coleta', 'Coleta'], ['interna', 'Entrega interna']];
@@ -1184,47 +889,6 @@ function abrirFormEntrega(id) {
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
 }
 
-function salvarEntrega_legacy(id) {
-  const fornecedor = document.getElementById('ce_fornecedor').value.trim();
-  if (!fornecedor) { toast('Informe o fornecedor ou transportadora.', 'error'); return; }
-  const dados = {
-    tipo: document.getElementById('ce_tipo').value,
-    fornecedor: fornecedor,
-    motorista: document.getElementById('ce_motorista').value.trim(),
-    placa: document.getElementById('ce_placa').value.trim().toUpperCase(),
-    nf: document.getElementById('ce_nf').value.trim(),
-    descricao: document.getElementById('ce_desc').value.trim(),
-    volumes: parseInt(document.getElementById('ce_volumes').value, 10) || 0,
-    destinatario: document.getElementById('ce_dest').value.trim(),
-    setor: document.getElementById('ce_setor').value.trim(),
-    status: document.getElementById('ce_status').value,
-    obs: document.getElementById('ce_obs').value.trim()
-  };
-  if (id) {
-    Object.assign(DB.entregas.find(x => x.id === id), dados);
-    toast('Entrega atualizada.');
-  } else {
-    DB.entregas.push(Object.assign({ id: uid(), data: new Date().toISOString() }, dados));
-    toast('Entrega registrada.');
-  }
-  saveDB('entregas'); fecharModal(); renderEntregas(); renderDashboard();
-}
-
-function baixarEntrega_legacy(id) {
-  const e = DB.entregas.find(x => x.id === id);
-  if (!e) return;
-  e.status = 'entregue';
-  saveDB('entregas'); renderEntregas(); renderDashboard();
-  toast('Entrega baixada como "Entregue": ' + e.fornecedor);
-}
-
-function excluirEntrega_legacy(id) {
-  const e = DB.entregas.find(x => x.id === id);
-  confirmar('Excluir a entrega de "' + e.fornecedor + '" (' + (e.nf || 'sem NF') + ')? Esta ação não pode ser desfeita.', function () {
-    DB.entregas = DB.entregas.filter(x => x.id !== id);
-    saveDB('entregas'); renderEntregas(); renderDashboard(); toast('Entrega excluída.');
-  });
-}
 
 /* ============================================================
    HISTÓRICO
@@ -1562,7 +1226,7 @@ function renderAuditoria() {
 const searchInput = document.getElementById('globalSearch');
 const searchResults = document.getElementById('searchResults');
 
-searchInput.addEventListener('input', function () {
+searchInput.addEventListener('input', debounce(function () {
   const q = norm(this.value.trim());
   if (q.length < 2) { searchResults.classList.remove('open'); return; }
   const hits = [];
@@ -1619,7 +1283,7 @@ searchInput.addEventListener('input', function () {
     });
   }
   searchResults.classList.add('open');
-});
+}, 300));
 
 document.addEventListener('click', function (e) {
   if (!e.target.closest('.search-wrap')) searchResults.classList.remove('open');
@@ -1771,13 +1435,13 @@ function setupAutocomplete(inputId, getSugestoes, aoSelecionar) {
     fechar();
   }
 
-  input.addEventListener('input', function () {
+  input.addEventListener('input', debounce(function () {
     const q = norm(this.value.trim());
     if (q.length < 2) { fechar(); return; }
     itens = getSugestoes(q).slice(0, 8);
     ativo = -1;
     render();
-  });
+  }, 200));
 
   input.addEventListener('keydown', function (e) {
     if (!box.classList.contains('open')) return;
@@ -1826,46 +1490,6 @@ function renderUserCard() {
     '</div>';
 }
 
-function abrirAreaUsuario_legacy() {
-  const u = USUARIO;
-  abrirModal('Área do usuário',
-    '<div class="form-grid">' +
-    fotoField() +
-    '<div class="field"><label>Nome <span class="req">*</span></label><input id="us_nome" type="text" maxlength="' + LIMITE_NOME + '" placeholder="Nome" value="' + esc(u.nome) + '"></div>' +
-    '<div class="field"><label>Sobrenome</label><input id="us_sobrenome" type="text" maxlength="' + LIMITE_NOME + '" placeholder="Sobrenome" value="' + esc(u.sobrenome || '') + '"></div>' +
-    '<div class="field"><label>Celular</label><input id="us_celular" type="text" inputmode="numeric" maxlength="13" placeholder="51 99999 9999" oninput="mascaraCelular(this)" value="' + esc(fmtCelular(u.celular)) + '"></div>' +
-    '<div class="field"><label>E-mail</label><input id="us_email" type="email" placeholder="nome@marcher.com.br" value="' + esc(u.email || '') + '"></div>' +
-    '<div class="field"><label>Perfil de acesso</label><select id="us_perfil">' +
-    '<option value="Administrador"' + (u.perfil === 'Administrador' ? ' selected' : '') + '>Administrador</option>' +
-    '<option value="Porteiro"' + (u.perfil === 'Porteiro' ? ' selected' : '') + '>Porteiro</option></select></div>' +
-    '<div class="field full"><div class="muted" style="font-size:.74rem">Nome + sobrenome são limitados a ' + LIMITE_NOME + ' caracteres para não quebrar no rodapé. As permissões de cada perfil serão definidas na próxima etapa.</div></div>' +
-    '</div><div class="form-foot">' +
-    '<button class="btn btn-primary" onclick="salvarUsuario()">Salvar</button>' +
-    '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
-  setFotoPreview(u.foto || '');
-}
-
-function salvarUsuario_legacy() {
-  const nome = document.getElementById('us_nome').value.trim();
-  const sobrenome = document.getElementById('us_sobrenome').value.trim();
-  if (!nome) { toast('Informe ao menos o nome.', 'error'); return; }
-  const completo = (nome + ' ' + sobrenome).trim();
-  if (completo.length > LIMITE_NOME) {
-    toast('Nome + sobrenome deve ter até ' + LIMITE_NOME + ' caracteres (atual: ' + completo.length + ').', 'error');
-    return;
-  }
-  USUARIO.nome = nome;
-  USUARIO.sobrenome = sobrenome;
-  USUARIO.celular = fmtCelular(document.getElementById('us_celular').value);
-  USUARIO.email = document.getElementById('us_email').value.trim();
-  USUARIO.perfil = document.getElementById('us_perfil').value;
-  USUARIO.foto = fotoBuffer;
-  saveUsuario();
-  saveProfileRemote(USUARIO);
-  renderUserCard();
-  fecharModal();
-  toast('Perfil atualizado.');
-}
 
 function perfilBadge(perfil) {
   const normalizado = normalizeRole(perfil);
@@ -1916,23 +1540,6 @@ async function salvarPerfilUsuario(id) {
   } catch (e) {
     toast(e.message || 'Falha ao atualizar perfil.', 'error');
   }
-}
-
-function abrirAjudaCadastroUsuario_legacy() {
-  abrirModal('Cadastrar usuário',
-    '<div class="form-grid">' +
-    '<div class="field full"><div class="report-card" style="padding:14px 16px;box-shadow:none;border:1px solid #e3e3de">' +
-    '<h4>Como cadastrar um novo usuário</h4>' +
-    '<p>O login ainda é criado no painel do Supabase. Depois ele aparece aqui para você definir o perfil.</p>' +
-    '<p><strong>Passo 1.</strong> Abra o projeto no Supabase.</p>' +
-    '<p><strong>Passo 2.</strong> Vá em <strong>Authentication &gt; Users</strong>.</p>' +
-    '<p><strong>Passo 3.</strong> Clique em <strong>Add user</strong> e informe e-mail e senha.</p>' +
-    '<p><strong>Passo 4.</strong> Volte nesta tela e clique em <strong>Atualizar lista</strong>.</p>' +
-    '<p><strong>Passo 5.</strong> Escolha o perfil <strong>Administrador</strong>, <strong>Segurança</strong> ou <strong>Consulta</strong> e salve.</p>' +
-    '</div></div>' +
-    '<div class="field full"><div class="muted">Se você quiser, eu posso colocar depois um backend seguro para criar usuários direto pelo app. Hoje isso não é feito no front porque exigiria credenciais administrativas do Supabase.</div></div>' +
-    '</div><div class="form-foot">' +
-    '<button class="btn btn-ghost" onclick="fecharModal()">Fechar</button></div>', true);
 }
 
 function abrirAjudaCadastroUsuario() {
@@ -2102,6 +1709,7 @@ async function salvarUsuario() {
   USUARIO.celular = fmtCelular(document.getElementById('us_celular').value);
   USUARIO.email = document.getElementById('us_email').value.trim();
   try {
+    setFotoCarregando(true);
     USUARIO.foto = await uploadPhotoIfNeeded('profiles', USUARIO.id || 'perfil', fotoBuffer, USUARIO.foto || '');
     saveUsuario();
     await saveProfileRemote(USUARIO);
@@ -2109,6 +1717,7 @@ async function salvarUsuario() {
     fecharModal();
     toast('Perfil atualizado.');
   } catch (e) {
+    setFotoCarregando(false);
     toast(e.message || 'Falha ao salvar perfil.', 'error');
   }
 }
@@ -2239,6 +1848,7 @@ async function salvarVisitante(id) {
     row = Object.assign({ id: uid() }, dados);
   }
   try {
+    setFotoCarregando(true);
     const fotoAnterior = row.foto || '';
     const fotoFinal = await uploadPhotoIfNeeded('visitantes', row.id, fotoBuffer, fotoAnterior);
     Object.assign(row, dados, { foto: fotoFinal });
@@ -2249,6 +1859,7 @@ async function salvarVisitante(id) {
     toast(id ? 'Visitante atualizado.' : 'Visitante cadastrado.');
     retomarEntradaPendenteSePossivel();
   } catch (e) {
+    setFotoCarregando(false);
     toast(e.message || 'Falha ao salvar visitante.', 'error');
   }
 }
@@ -2288,6 +1899,7 @@ async function salvarMotorista(id) {
     row = Object.assign({ id: uid() }, dados);
   }
   try {
+    setFotoCarregando(true);
     const fotoAnterior = row.foto || '';
     const fotoFinal = await uploadPhotoIfNeeded('motoristas', row.id, fotoBuffer, fotoAnterior);
     Object.assign(row, dados, { foto: fotoFinal });
@@ -2298,6 +1910,7 @@ async function salvarMotorista(id) {
     toast(id ? 'Motorista atualizado.' : 'Motorista cadastrado.');
     retomarEntradaPendenteSePossivel();
   } catch (e) {
+    setFotoCarregando(false);
     toast(e.message || 'Falha ao salvar motorista.', 'error');
   }
 }
