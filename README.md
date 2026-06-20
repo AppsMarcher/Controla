@@ -70,14 +70,22 @@ sql/
 
 ## Perfis de acesso
 
-- **Administrador**: faz tudo.
-- **Seguranca**: le tudo, grava **acessos** e **entregas**, e pode fazer cadastro rapido operacional de visitante/motorista/veiculo durante a entrada.
-- **Consultas**: leitura apenas.
+| Perfil | Acessos | Cadastros | Operacoes | Relatorios | Usuarios |
+|--------|---------|-----------|-----------|------------|---------|
+| Super Admin | total | total | total | total | total |
+| Admin | total | total | total | total | exceto Super Admin |
+| Seguranca | leitura | cadastro rapido na entrada | entradas/saidas/entregas | — | — |
+| Consulta | leitura | — | — | leitura | — |
+
+## Exclusao de registros
+
+Todas as exclusoes sao **soft delete**: o registro recebe `deleted_at` e `deleted_by` e some das listagens normais, mas fica acessivel em **Relatorios > Arquivados** para restauracao. Nada e apagado fisicamente pelo app.
 
 ## Notas tecnicas
 
-- IDs sao `text` (o mesmo `uid()` do app).
-- A persistencia normal e **por registro**, para nao apagar dados de outro usuario em operacao paralela.
-- A restauracao de backup continua sendo uma substituicao total e deve ser usada apenas por administrador.
-- Fotos agora podem ser gravadas no **Supabase Storage** (bucket publico `fotos`) e o link publico fica salvo nas tabelas.
+- IDs sao `text` (gerados por `uid()` no cliente).
+- A persistencia e **por registro** (`saveRow`), evitando sobrescrever dados de outro usuario em operacao paralela. O backup JSON e a unica operacao que substitui tudo de uma vez — uso exclusivo do Admin.
+- Fotos sao reduzidas no cliente (max 360 px, JPEG 82 %) antes do upload para o Supabase Storage. Durante o envio, o botao Salvar fica desabilitado com indicador visual.
+- Buscas e autocompletes usam debounce (200–300 ms) para nao iterar os registros em cada tecla.
+- Toasts ficam limitados a 3 simultaneos; o mais antigo e removido automaticamente ao chegar um novo.
 - Para validar a persistencia no banco e no Storage, use `sql/validation_queries.sql`.
