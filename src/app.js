@@ -190,7 +190,7 @@ function sortRows(rows, key) {
 function thSort(key, col, label) {
   if (!col) return '<th>' + label + '</th>';
   const s = sortState[key];
-  const ind = s.col === col ? ' <span class="sort-ind">' + (s.dir > 0 ? '▲' : '▼') + '</span>' : '';
+  const ind = s.col === col ? ' <span class="sort-ind">' + (s.dir > 0 ? '&#9650;' : '&#9660;') + '</span>' : '';
   return '<th class="th-sort" onclick="ordenarTabela(\'' + key + '\',\'' + col + '\')">' + label + ind + '</th>';
 }
 
@@ -2054,7 +2054,7 @@ function renderRamais() {
   if (q) rows = rows.filter(r => norm(r.setor).includes(q) || norm(r.ramal).includes(q) || norm(r.responsavel).includes(q) || norm(r.celular).includes(q) || norm(r.email).includes(q));
   rows.sort((a, b) => ramalSort.dir * sortPt(a, b, ramalSort.col));
 
-  const ind = c => ramalSort.col === c ? ' <span class="sort-ind">' + (ramalSort.dir > 0 ? '▲' : '▼') + '</span>' : '';
+  const ind = c => ramalSort.col === c ? ' <span class="sort-ind">' + (ramalSort.dir > 0 ? '&#9650;' : '&#9660;') + '</span>' : '';
   let html = '<colgroup>' +
     '<col style="width:32px">' +
     '<col style="width:18%">' +
