@@ -634,24 +634,60 @@ function setFotoCarregando(on) {
 }
 
 /* ----- Webcam (predisposição funcional) ----- */
-function capturarFotoWebcam() {
+function explainWebcamError(err) {
+  const name = String(err?.name || '');
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    return 'O acesso à webcam foi bloqueado. Libere a câmera no navegador e no Windows, depois tente novamente.';
+  }
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+    return 'Nenhuma webcam foi encontrada neste dispositivo.';
+  }
+  if (name === 'NotReadableError' || name === 'TrackStartError') {
+    return 'A webcam já está em uso por outro aplicativo ou não pôde ser iniciada.';
+  }
+  if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+    return 'A webcam disponível não aceitou o modo solicitado. Tente novamente.';
+  }
+  if (name === 'SecurityError') {
+    return 'A webcam exige acesso por http://localhost ou https.';
+  }
+  return err?.message || 'Não foi possível acessar a webcam.';
+}
+
+async function capturarFotoWebcam() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     toast('Webcam indisponível neste contexto (requer HTTPS ou localhost).', 'warn');
+    return;
+  }
+  if (!window.isSecureContext) {
+    toast('A webcam exige acesso por http://localhost ou https.', 'warn');
     return;
   }
   const pop = document.getElementById('fotoWebcamPopover');
   const video = document.getElementById('fotoVideo');
   if (!pop || !video) return;
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
-    .then(function (stream) {
+  const constraintsList = [
+    { video: { facingMode: 'user' }, audio: false },
+    { video: true, audio: false }
+  ];
+  let lastError = null;
+  for (const constraints of constraintsList) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       pararWebcam(true);
       _webcamStream = stream;
       pop.style.display = 'block';
       pop.classList.add('open');
       video.srcObject = stream;
       video.play().catch(() => {});
-    })
-    .catch(function () { toast('Não foi possível acessar a webcam.', 'error'); });
+      return;
+    } catch (err) {
+      lastError = err;
+      const name = String(err?.name || '');
+      if (name !== 'OverconstrainedError' && name !== 'ConstraintNotSatisfiedError' && name !== 'NotFoundError') break;
+    }
+  }
+  toast(explainWebcamError(lastError), 'error');
 }
 
 function tirarFotoWebcam() {
