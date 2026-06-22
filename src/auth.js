@@ -5,9 +5,50 @@ import { supabase } from './data/client.js';
 
 const PROFILE_FIELDS = 'id, nome, sobrenome, celular, email, foto, ativo, perfil, created_at';
 
+function getAuthParams() {
+  const params = new URLSearchParams(window.location.search || '');
+  const hash = String(window.location.hash || '').replace(/^#/, '');
+  if (hash) {
+    const hashParams = new URLSearchParams(hash);
+    hashParams.forEach((value, key) => {
+      if (!params.has(key)) params.set(key, value);
+    });
+  }
+  return params;
+}
+
 function isRecoveryFlow() {
-  const raw = window.location.hash + '&' + window.location.search;
-  return /(?:^|[?#&])type=recovery(?:&|$)/.test(raw);
+  return getAuthParams().get('type') === 'recovery';
+}
+
+function hasAuthCallbackParams() {
+  const params = getAuthParams();
+  return params.has('type') || params.has('code') || params.has('token_hash') || params.has('access_token') || params.has('refresh_token');
+}
+
+function waitForPasswordRecoveryEvent(timeoutMs) {
+  return new Promise((resolve) => {
+    let done = false;
+    let timer = null;
+    let subscription = null;
+
+    const finish = (payload) => {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      subscription?.unsubscribe();
+      resolve(payload || null);
+    };
+
+    const result = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        finish({ user: session?.user || null });
+      }
+    });
+
+    subscription = result?.data?.subscription || null;
+    timer = setTimeout(() => finish(null), timeoutMs || 1200);
+  });
 }
 
 function getRecoveryRedirectUrl() {
@@ -36,9 +77,19 @@ function setPasswordToggle(toggleId, inputId) {
 export async function ensureAuth() {
   if (!USE_SUPABASE) return null;
 
+  const callbackParams = hasAuthCallbackParams();
+  const waitRecovery = callbackParams ? waitForPasswordRecoveryEvent(1400) : Promise.resolve(null);
   const { data } = await supabase.auth.getSession();
+  const recoveryEvent = await waitRecovery;
+
+  if (recoveryEvent) {
+    return await showRecovery(recoveryEvent.user || data.session?.user || null);
+  }
   if (isRecoveryFlow()) {
     return await showRecovery(data.session?.user || null);
+  }
+  if (callbackParams && data.session?.user) {
+    return await showRecovery(data.session.user);
   }
   if (data.session) return data.session.user;
 
