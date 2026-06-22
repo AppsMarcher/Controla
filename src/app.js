@@ -541,6 +541,7 @@ function retomarEntradaPendenteSePossivel() {
 let fotoBuffer = '';        // foto selecionada no formulário aberto (data URL)
 let ENTRADA_PENDENTE = null;
 let _webcamStream = null;   // stream ativa, se houver
+let _webcamCurrentDeviceId = '';
 
 function fotoPlaceholderSVG() {
   return '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
@@ -565,6 +566,13 @@ function fotoField() {
         '<div class="foto-webcam-head">' +
           '<strong>Visualização da webcam</strong>' +
           '<button type="button" class="btn btn-ghost btn-sm" onclick="pararWebcam()">Fechar</button>' +
+        '</div>' +
+        '<div class="foto-webcam-toolbar">' +
+          '<label class="foto-webcam-picker">Câmera' +
+            '<select id="fotoWebcamSelect" onchange="trocarWebcamSelecionada()">' +
+              '<option value="">Carregando câmeras...</option>' +
+            '</select>' +
+          '</label>' +
         '</div>' +
         '<div class="foto-webcam-stage">' +
           '<video id="fotoVideo" autoplay playsinline muted></video>' +
@@ -654,33 +662,76 @@ function explainWebcamError(err) {
   return err?.message || 'Não foi possível acessar a webcam.';
 }
 
-async function capturarFotoWebcam() {
+function webcamBaseGuards() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     toast('Webcam indisponível neste contexto (requer HTTPS ou localhost).', 'warn');
-    return;
+    return false;
   }
   if (!window.isSecureContext) {
     toast('A webcam exige acesso por http://localhost ou https.', 'warn');
-    return;
+    return false;
   }
-  const pop = document.getElementById('fotoWebcamPopover');
-  const video = document.getElementById('fotoVideo');
-  if (!pop || !video) return;
-  const constraintsList = [
+  return true;
+}
+
+function getWebcamConstraintList(deviceId) {
+  if (deviceId) {
+    return [
+      { video: { deviceId: { exact: deviceId } }, audio: false },
+      { video: { deviceId }, audio: false }
+    ];
+  }
+  return [
     { video: { facingMode: 'user' }, audio: false },
     { video: true, audio: false }
   ];
+}
+
+async function atualizarListaWebcams() {
+  const select = document.getElementById('fotoWebcamSelect');
+  if (!select || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter((d) => d.kind === 'videoinput');
+    if (!cams.length) {
+      select.innerHTML = '<option value="">Nenhuma câmera encontrada</option>';
+      select.disabled = true;
+      return;
+    }
+    select.innerHTML = cams.map((cam, idx) => {
+      const label = cam.label || ('Câmera ' + (idx + 1));
+      const selected = cam.deviceId === _webcamCurrentDeviceId ? ' selected' : '';
+      return '<option value="' + esc(cam.deviceId) + '"' + selected + '>' + esc(label) + '</option>';
+    }).join('');
+    select.disabled = cams.length <= 1;
+    if (!_webcamCurrentDeviceId && cams[0]) {
+      _webcamCurrentDeviceId = cams[0].deviceId;
+      select.value = _webcamCurrentDeviceId;
+    }
+  } catch (err) {
+    select.innerHTML = '<option value="">Não foi possível listar as câmeras</option>';
+    select.disabled = true;
+  }
+}
+
+async function iniciarWebcam(deviceId) {
+  const pop = document.getElementById('fotoWebcamPopover');
+  const video = document.getElementById('fotoVideo');
+  if (!pop || !video) return;
+  const constraintsList = getWebcamConstraintList(deviceId);
   let lastError = null;
   for (const constraints of constraintsList) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       pararWebcam(true);
       _webcamStream = stream;
+      _webcamCurrentDeviceId = stream.getVideoTracks?.()[0]?.getSettings?.().deviceId || deviceId || '';
       pop.style.display = 'block';
       pop.classList.add('open');
       video.srcObject = stream;
       video.play().catch(() => {});
-      return;
+      await atualizarListaWebcams();
+      return true;
     } catch (err) {
       lastError = err;
       const name = String(err?.name || '');
@@ -688,6 +739,21 @@ async function capturarFotoWebcam() {
     }
   }
   toast(explainWebcamError(lastError), 'error');
+  return false;
+}
+
+async function capturarFotoWebcam() {
+  if (!webcamBaseGuards()) return;
+  await iniciarWebcam(_webcamCurrentDeviceId || '');
+}
+
+async function trocarWebcamSelecionada() {
+  if (!webcamBaseGuards()) return;
+  const select = document.getElementById('fotoWebcamSelect');
+  if (!select) return;
+  const nextDeviceId = select.value || '';
+  if (!nextDeviceId || nextDeviceId === _webcamCurrentDeviceId) return;
+  await iniciarWebcam(nextDeviceId);
 }
 
 function tirarFotoWebcam() {
@@ -2317,6 +2383,7 @@ Object.assign(window, {
   ordenarRamais,
   ordenarTabela,
   pararWebcam,
+  trocarWebcamSelecionada,
   registrarEntrada,
   registrarSaida,
   removerFoto,
