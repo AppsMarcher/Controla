@@ -1,6 +1,6 @@
 /* ============================================================
-   CONTROLA MARCHER Ã¢â‚¬â€ App (UI)  Ã¢â‚¬Â¢  mÃƒÂ³dulo principal
-   PersistÃƒÂªncia via camada de dados (Supabase ou localStorage)
+   CONTROLA MARCHER — App (UI)  •  módulo principal
+   Persistência via camada de dados (Supabase ou localStorage)
    ============================================================ */
 import { repo } from './data/repo.js';
 import { deleteUserRemote, inviteUserRemote, loadProfilesRemote, logout, saveProfileRemote, setUserPasswordRemote, updateProfileRoleRemote, updateUserStatusRemote } from './auth.js';
@@ -16,7 +16,7 @@ let ROLE = ROLE_SUPER_ADMIN;
 let PERFIS_USUARIOS = [];
 const PERFIS_ACESSO = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_SEGURANCA, ROLE_CONSULTA];
 
-let DB = {};                 // cache em memÃƒÂ³ria (hidratado em loadData)
+let DB = {};                 // cache em memória (hidratado em loadData)
 let ARQUIVADOS = { visitantes: [], motoristas: [], veiculos: [], ramais: [], entregas: [] };
 let AUDITORIA = [];
 
@@ -93,7 +93,7 @@ function canAccessView(name) {
 }
 function ensureAllowed(ok, msg) {
   if (ok) return true;
-  toast(msg || 'Seu perfil nÃƒÂ£o permite esta aÃƒÂ§ÃƒÂ£o.', 'warn');
+  toast(msg || 'Seu perfil não permite esta ação.', 'warn');
   return false;
 }
 
@@ -101,7 +101,7 @@ function archiveEntityLabel(tipo) {
   return ({
     visitantes: 'Visitantes',
     motoristas: 'Motoristas',
-    veiculos: 'VeÃƒÂ­culos',
+    veiculos: 'Veículos',
     acessos: 'Acessos',
     ramais: 'Ramais',
     entregas: 'Entregas'
@@ -109,8 +109,8 @@ function archiveEntityLabel(tipo) {
 }
 
 /* ============================================================
-   CONTROLA MARCHER Ã¢â‚¬â€ JAVASCRIPT
-   PersistÃƒÂªncia: localStorage | Sem dependÃƒÂªncias externas
+   CONTROLA MARCHER — JAVASCRIPT
+   Persistência: localStorage | Sem dependências externas
    ============================================================ */
 
 
@@ -126,12 +126,12 @@ function esc(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 function fmtDataHora(iso) {
-  if (!iso) return 'Ã¢â‚¬â€';
+  if (!iso) return '—';
   const d = new Date(iso);
   return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 function fmtHora(iso) {
-  if (!iso) return 'Ã¢â‚¬â€';
+  if (!iso) return '—';
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 function norm(s) {
@@ -150,7 +150,7 @@ function badgeStatus(status) {
 }
 function badgeTipo(t) { return '<span class="badge b-tipo">' + esc(t) + '</span>'; }
 
-/* ---------- ÃƒÂcones de aÃƒÂ§ÃƒÂ£o (padrÃƒÂ£o ÃƒÂºnico do app) ---------- */
+/* ---------- Ícones de ação (padrão único do app) ---------- */
 const ICO = {
   edit:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l-1-14"/><path d="M10 11v6M14 11v6"/></svg>',
@@ -160,13 +160,13 @@ const ICO = {
   key:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M12 15h9"/><path d="M18 12v6"/><path d="M21 12v6"/></svg>'
 };
 
-/* Monta um botÃƒÂ£o de aÃƒÂ§ÃƒÂ£o sÃƒÂ³ com ÃƒÂ­cone (com tooltip/acessibilidade). */
+/* Monta um botão de ação só com ícone (com tooltip/acessibilidade). */
 function btnIcon(cls, titulo, onclick, icone) {
   return '<button class="btn ' + cls + ' btn-sm btn-icon" title="' + esc(titulo) + '" aria-label="' + esc(titulo) + '" onclick="' + onclick + '">' + icone + '</button>';
 }
 
 /* ============================================================
-   ORDENAÃƒâ€¡ÃƒÆ’O Ã¢â‚¬â€ cabeÃƒÂ§alhos clicÃƒÂ¡veis (padrÃƒÂ£o ÃƒÂºnico reutilizÃƒÂ¡vel)
+   ORDENAÇÃO — cabeçalhos clicáveis (padrão único reutilizável)
    ============================================================ */
 const sortState = {
   saida:      { col: 'entrada', dir: 1 },
@@ -186,11 +186,11 @@ function sortRows(rows, key) {
   return rows.sort((a, b) => s.dir * cmpVal(a[s.col], b[s.col]));
 }
 
-/* Gera um <th> ordenÃƒÂ¡vel; col vazio => coluna nÃƒÂ£o ordenÃƒÂ¡vel (ex.: aÃƒÂ§ÃƒÂµes). */
+/* Gera um <th> ordenável; col vazio => coluna não ordenável (ex.: ações). */
 function thSort(key, col, label) {
   if (!col) return '<th>' + label + '</th>';
   const s = sortState[key];
-  const ind = s.col === col ? ' <span class="sort-ind">' + (s.dir > 0 ? 'Ã¢â€“Â²' : 'Ã¢â€“Â¼') + '</span>' : '';
+  const ind = s.col === col ? ' <span class="sort-ind">' + (s.dir > 0 ? '▲' : '▼') + '</span>' : '';
   return '<th class="th-sort" onclick="ordenarTabela(\'' + key + '\',\'' + col + '\')">' + label + ind + '</th>';
 }
 
@@ -201,7 +201,7 @@ function ordenarTabela(key, col) {
   if (fn) fn();
 }
 
-/* ---------- Celular: mÃƒÂ¡scara/format xx xxxxx xxxx ---------- */
+/* ---------- Celular: máscara/format xx xxxxx xxxx ---------- */
 function fmtCelular(s) {
   const d = String(s == null ? '' : s).replace(/\D/g, '').slice(0, 11);
   if (!d) return '';
@@ -258,9 +258,9 @@ function validarDocumento(doc) {
   const raw = String(doc == null ? '' : doc).trim();
   const digits = raw.replace(/\D/g, '');
   const normalized = normalizeDocumento(raw);
-  if (!normalized) return { ok: false, msg: 'Informe um documento vÃƒÂ¡lido.' };
-  if (digits.length === 11 && !isCpfValido(raw)) return { ok: false, msg: 'CPF invÃƒÂ¡lido. Confira os dÃƒÂ­gitos informados.' };
-  if (normalized.length < 4) return { ok: false, msg: 'Documento invÃƒÂ¡lido. Confira os dados informados.' };
+  if (!normalized) return { ok: false, msg: 'Informe um documento válido.' };
+  if (digits.length === 11 && !isCpfValido(raw)) return { ok: false, msg: 'CPF inválido. Confira os dígitos informados.' };
+  if (normalized.length < 4) return { ok: false, msg: 'Documento inválido. Confira os dados informados.' };
   return { ok: true };
 }
 
@@ -270,7 +270,7 @@ function debounce(fn, ms) {
   return function (...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), ms); };
 }
 
-/* ---------- Toast (fila mÃƒÂ¡x. 3 Ã¢â‚¬â€ remove o mais antigo se ultrapassar) ---------- */
+/* ---------- Toast (fila máx. 3 — remove o mais antigo se ultrapassar) ---------- */
 const _toastAtivos = [];
 function toast(msg, kind) {
   const box = document.getElementById('toastBox');
@@ -309,17 +309,17 @@ document.getElementById('modalOverlay').addEventListener('click', function (e) {
 });
 
 function confirmar(texto, onYes) {
-  abrirModal('ConfirmaÃƒÂ§ÃƒÂ£o', '<div class="confirm-text">' + esc(texto) + '</div>' +
+  abrirModal('Confirmação', '<div class="confirm-text">' + esc(texto) + '</div>' +
     '<div class="form-foot" style="margin-top:0">' +
     '<button class="btn btn-danger" id="confirmYes">Sim, excluir</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>', true);
   document.getElementById('confirmYes').onclick = function () { fecharModal(); onYes(); };
 }
 
-/* ---------- NavegaÃƒÂ§ÃƒÂ£o ---------- */
+/* ---------- Navegação ---------- */
 function showView(name) {
   if (!canAccessView(name)) {
-    toast('Seu perfil nÃƒÂ£o pode acessar esta ÃƒÂ¡rea.', 'warn');
+    toast('Seu perfil não pode acessar esta área.', 'warn');
     name = 'dashboard';
   }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -341,7 +341,7 @@ document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('open');
 });
 
-/* ---------- RelÃƒÂ³gio do header ---------- */
+/* ---------- Relógio do header ---------- */
 function tickClock() {
   const d = new Date();
   document.getElementById('headerClock').textContent =
@@ -360,7 +360,7 @@ function renderDashboard() {
     { label: 'Pessoas dentro agora', num: dentro.length, view: 'saida', red: true },
     { label: 'Visitantes presentes', num: dentro.filter(a => a.tipo === 'visitante').length, view: 'saida' },
     { label: 'Motoristas presentes', num: dentro.filter(a => a.tipo === 'motorista').length, view: 'saida' },
-    { label: 'VeÃƒÂ­culos no pÃƒÂ¡tio', num: dentro.filter(a => (a.placa || '').trim() !== '').length, view: 'saida' },
+    { label: 'Veículos no pátio', num: dentro.filter(a => (a.placa || '').trim() !== '').length, view: 'saida' },
     { label: 'Entregas pendentes', num: DB.entregas.filter(e => e.status === 'pendente').length, view: 'entregas', red: true },
     { label: 'Registros do dia', num: doDia.length, view: 'historico' }
   ];
@@ -372,10 +372,10 @@ function renderDashboard() {
 
   const rows = doDia.slice().sort((a, b) => b.entrada.localeCompare(a.entrada)).slice(0, 10);
   let html = '<thead><tr><th>Hora</th><th>Tipo</th><th>Nome</th><th>Empresa</th><th>Placa</th><th>Status</th></tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="6">Nenhum registro hoje. Use "Registrar Entrada" para comeÃƒÂ§ar.</td></tr>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="6">Nenhum registro hoje. Use "Registrar Entrada" para começar.</td></tr>';
   rows.forEach(a => {
     html += '<tr><td class="mono">' + fmtHora(a.entrada) + '</td><td>' + badgeTipo(a.tipo) + '</td><td><strong>' + esc(a.nome) + '</strong></td><td>' +
-      esc(a.empresa || 'Ã¢â‚¬â€') + '</td><td class="mono">' + esc(a.placa || 'Ã¢â‚¬â€') + '</td><td>' + badgeStatus(a.status) + '</td></tr>';
+      esc(a.empresa || '—') + '</td><td class="mono">' + esc(a.placa || '—') + '</td><td>' + badgeStatus(a.status) + '</td></tr>';
   });
   document.getElementById('dashTable').innerHTML = html + '</tbody>';
 }
@@ -429,7 +429,7 @@ function obterPendenciasCadastroEntrada(reg) {
 
 function direcionarCadastroPendente(pendencias, reg) {
   if (!pendencias.length) return false;
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nÃƒÂ£o pode cadastrar visitantes, motoristas ou veÃƒÂ­culos.')) return true;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode cadastrar visitantes, motoristas ou veículos.')) return true;
   ENTRADA_PENDENTE = { reg: { ...reg }, pendencias: pendencias.slice() };
 
   if (pendencias.includes('visitante')) {
@@ -439,9 +439,9 @@ function direcionarCadastroPendente(pendencias, reg) {
       documento: reg.documento,
       telefone: reg.telefone,
       empresa: reg.empresa,
-      obs: reg.tipo === 'prestador' ? 'Prestador de serviÃƒÂ§o' : ''
+      obs: reg.tipo === 'prestador' ? 'Prestador de serviço' : ''
     });
-    toast('Visitante nÃƒÂ£o cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    toast('Visitante não cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
     return true;
   }
 
@@ -454,7 +454,7 @@ function direcionarCadastroPendente(pendencias, reg) {
       transportadora: reg.empresa,
       placaPadrao: reg.placa
     });
-    toast('Motorista nÃƒÂ£o cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    toast('Motorista não cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
     return true;
   }
 
@@ -469,7 +469,7 @@ function direcionarCadastroPendente(pendencias, reg) {
       motorista: motoristaExistente ? motoristaExistente.nome : (reg.tipo === 'motorista' ? reg.nome : ''),
       motoristaDocumento: motoristaExistente ? motoristaExistente.documento : ''
     });
-    toast('VeÃƒÂ­culo nÃƒÂ£o cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
+    toast('Veículo não cadastrado. Complete o cadastro antes de registrar a entrada.', 'warn');
     return true;
   }
 
@@ -477,7 +477,7 @@ function direcionarCadastroPendente(pendencias, reg) {
 }
 
 function registrarEntrada() {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nÃƒÂ£o pode registrar entradas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode registrar entradas.')) return;
   const dadosEntrada = getEntradaFormData();
   const { nome, documento: doc, empresa, visitado } = dadosEntrada;
   if (!nome || !doc || !empresa || !visitado) {
@@ -493,7 +493,7 @@ function registrarEntrada() {
   const jaDentro = DB.acessos.find(a => a.status === 'Dentro' &&
     normalizeDocumento(a.documento) === docNorm);
   if (jaDentro) {
-    toast('Entrada bloqueada: ' + jaDentro.nome + ' (doc. ' + jaDentro.documento + ') jÃƒÂ¡ estÃƒÂ¡ dentro sem registro de saÃƒÂ­da.', 'warn');
+    toast('Entrada bloqueada: ' + jaDentro.nome + ' (doc. ' + jaDentro.documento + ') já está dentro sem registro de saída.', 'warn');
     return;
   }
   const pendenciasCadastro = obterPendenciasCadastroEntrada(dadosEntrada);
@@ -531,14 +531,14 @@ function retomarEntradaPendenteSePossivel() {
 }
 
 /* ============================================================
-   SAÃƒÂDA
+   SAÍDA
    ============================================================ */
 
 /* ============================================================
-   FOTO Ã¢â‚¬â€ upload (com reduÃƒÂ§ÃƒÂ£o) + predisposiÃƒÂ§ÃƒÂ£o p/ webcam
+   FOTO — upload (com redução) + predisposição p/ webcam
    Usado nos cadastros de Visitante e Motorista.
    ============================================================ */
-let fotoBuffer = '';        // foto selecionada no formulÃƒÂ¡rio aberto (data URL)
+let fotoBuffer = '';        // foto selecionada no formulário aberto (data URL)
 let ENTRADA_PENDENTE = null;
 let _webcamStream = null;   // stream ativa, se houver
 
@@ -547,7 +547,7 @@ function fotoPlaceholderSVG() {
     '<circle cx="12" cy="9" r="3.2"/><path d="M5.5 19.5c0-3.4 2.9-5.2 6.5-5.2s6.5 1.8 6.5 5.2"/></svg>';
 }
 
-/* Bloco do campo de foto para reutilizar nos dois formulÃƒÂ¡rios. */
+/* Bloco do campo de foto para reutilizar nos dois formulários. */
 function fotoField() {
   return '<div class="field full"><label>Foto</label>' +
     '<div class="foto-box">' +
@@ -558,13 +558,13 @@ function fotoField() {
           '<button type="button" class="btn btn-danger btn-sm" id="fotoRemover" onclick="removerFoto()" style="display:none">Remover</button>' +
         '</div>' +
         '<div id="fotoWebcamActions" class="foto-actions"></div>' +
-        '<div class="muted" style="font-size:.72rem">Clique na foto para enviar um arquivo (JPG ou PNG) Ã¢â‚¬â€ a imagem ÃƒÂ© reduzida automaticamente. Webcam quando disponÃƒÂ­vel (HTTPS).</div>' +
+        '<div class="muted" style="font-size:.72rem">Clique na foto para enviar um arquivo (JPG ou PNG) — a imagem é reduzida automaticamente. Webcam quando disponível (HTTPS).</div>' +
       '</div>' +
     '</div>' +
     '<input type="file" id="fotoInput" accept="image/*" style="display:none" onchange="carregarFoto(event)"></div>';
 }
 
-/* Redimensiona qualquer imagem (data URL) para no mÃƒÂ¡x. `max`px e devolve JPEG. */
+/* Redimensiona qualquer imagem (data URL) para no máx. `max`px e devolve JPEG. */
 function _resizeImg(srcDataUrl, cb, max) {
   const img = new Image();
   img.onload = function () {
@@ -577,7 +577,7 @@ function _resizeImg(srcDataUrl, cb, max) {
     c.getContext('2d').drawImage(img, 0, 0, w, h);
     cb(c.toDataURL('image/jpeg', 0.82));
   };
-  img.onerror = function () { toast('NÃƒÂ£o foi possÃƒÂ­vel ler a imagem.', 'error'); };
+  img.onerror = function () { toast('Não foi possível ler a imagem.', 'error'); };
   img.src = srcDataUrl;
 }
 
@@ -613,13 +613,13 @@ function setFotoCarregando(on) {
   const prev = document.getElementById('fotoPreview');
   const btn = document.querySelector('#modalBody .btn-primary');
   if (prev) prev.classList.toggle('foto-loading', on);
-  if (btn) { btn.disabled = on; btn.textContent = on ? 'EnviandoÃ¢â‚¬Â¦' : 'Salvar'; }
+  if (btn) { btn.disabled = on; btn.textContent = on ? 'Enviando…' : 'Salvar'; }
 }
 
-/* ----- Webcam (predisposiÃƒÂ§ÃƒÂ£o funcional) ----- */
+/* ----- Webcam (predisposição funcional) ----- */
 function capturarFotoWebcam() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast('Webcam indisponÃƒÂ­vel neste contexto (requer HTTPS ou localhost).', 'warn');
+    toast('Webcam indisponível neste contexto (requer HTTPS ou localhost).', 'warn');
     return;
   }
   const prev = document.getElementById('fotoPreview');
@@ -633,7 +633,7 @@ function capturarFotoWebcam() {
         '<button type="button" class="btn btn-primary btn-sm" onclick="tirarFotoWebcam()">Capturar</button>' +
         '<button type="button" class="btn btn-ghost btn-sm" onclick="pararWebcam()">Cancelar</button>';
     })
-    .catch(function () { toast('NÃƒÂ£o foi possÃƒÂ­vel acessar a webcam.', 'error'); });
+    .catch(function () { toast('Não foi possível acessar a webcam.', 'error'); });
 }
 
 function tirarFotoWebcam() {
@@ -662,7 +662,7 @@ function fotoThumb(foto, nome) {
 }
 
 /* ============================================================
-   CRUD Ã¢â‚¬â€ VISITANTES
+   CRUD — VISITANTES
    ============================================================ */
 function renderVisitantes() {
   const q = norm(document.getElementById('visBusca').value);
@@ -680,9 +680,9 @@ function renderVisitantes() {
       canDeleteCadastros() ? btnIcon('btn-danger', 'Excluir', 'excluirVisitante(\'' + v.id + '\')', ICO.trash) : ''
     ].join('');
     html += '<tr><td><span class="cell-foto">' + fotoThumb(v.foto, v.nome) + '<strong>' + esc(v.nome) + '</strong></span></td><td class="mono">' + esc(v.documento) + '</td>' +
-      '<td>' + esc(v.telefone || 'Ã¢â‚¬â€') + '</td><td>' + esc(v.empresa || 'Ã¢â‚¬â€') + '</td>' +
+      '<td>' + esc(v.telefone || '—') + '</td><td>' + esc(v.empresa || '—') + '</td>' +
       '<td>' + (v.ativo ? '<span class="badge b-ativo">Ativo</span>' : '<span class="badge b-inativo">Inativo</span>') + '</td>' +
-      '<td>' + esc(v.obs || 'Ã¢â‚¬â€') + '</td>' +
+      '<td>' + esc(v.obs || '—') + '</td>' +
       (actions
         ? '<td class="actions">' + actions + '</td>'
         : '') + '</tr>';
@@ -691,7 +691,7 @@ function renderVisitantes() {
 }
 
 function abrirFormVisitante(idOrSeed) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nÃƒÂ£o pode alterar visitantes.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode alterar visitantes.')) return;
   const v = typeof idOrSeed === 'string' ? DB.visitantes.find(x => x.id === idOrSeed) : null;
   const seed = !v && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
   abrirModal(v ? 'Editar visitante' : 'Novo visitante',
@@ -704,7 +704,7 @@ function abrirFormVisitante(idOrSeed) {
     '<div class="field"><label>Status</label><select id="cv_ativo">' +
     '<option value="1"' + (!v || v.ativo ? ' selected' : '') + '>Ativo</option>' +
     '<option value="0"' + (v && !v.ativo ? ' selected' : '') + '>Inativo</option></select></div>' +
-    '<div class="field full"><label>ObservaÃƒÂ§ÃƒÂµes</label><textarea id="cv_obs">' + esc(v ? v.obs : (seed?.obs || '')) + '</textarea></div>' +
+    '<div class="field full"><label>Observações</label><textarea id="cv_obs">' + esc(v ? v.obs : (seed?.obs || '')) + '</textarea></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarVisitante(' + (v ? '\'' + v.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
@@ -714,7 +714,7 @@ function abrirFormVisitante(idOrSeed) {
 
 
 /* ============================================================
-   CRUD Ã¢â‚¬â€ MOTORISTAS
+   CRUD — MOTORISTAS
    ============================================================ */
 function renderMotoristas() {
   const q = norm(document.getElementById('motBusca').value);
@@ -724,7 +724,7 @@ function renderMotoristas() {
   rows = sortRows(rows, 'motoristas');
   let html = '<thead><tr>' +
     thSort('motoristas', 'nome', 'Nome') + thSort('motoristas', 'documento', 'CPF/RG/CNH') + thSort('motoristas', 'telefone', 'Telefone') +
-    thSort('motoristas', 'transportadora', 'Transportadora') + thSort('motoristas', 'placaPadrao', 'Placa padrÃƒÂ£o') + thSort('motoristas', 'tipoVeiculo', 'VeÃƒÂ­culo') +
+    thSort('motoristas', 'transportadora', 'Transportadora') + thSort('motoristas', 'placaPadrao', 'Placa padrão') + thSort('motoristas', 'tipoVeiculo', 'Veículo') +
     thSort('motoristas', 'obs', 'Obs.') + ((canWriteCadastros() || canDeleteCadastros()) ? '<th></th>' : '') + '</tr></thead><tbody>';
   if (!rows.length) html += '<tr class="empty-row"><td colspan="' + ((canWriteCadastros() || canDeleteCadastros()) ? 8 : 7) + '">Nenhum motorista cadastrado.</td></tr>';
   rows.forEach(m => {
@@ -733,9 +733,9 @@ function renderMotoristas() {
       canDeleteCadastros() ? btnIcon('btn-danger', 'Excluir', 'excluirMotorista(\'' + m.id + '\')', ICO.trash) : ''
     ].join('');
     html += '<tr><td><span class="cell-foto">' + fotoThumb(m.foto, m.nome) + '<strong>' + esc(m.nome) + '</strong></span></td><td class="mono">' + esc(m.documento) + '</td>' +
-      '<td>' + esc(m.telefone || 'Ã¢â‚¬â€') + '</td><td>' + esc(m.transportadora || 'Ã¢â‚¬â€') + '</td>' +
-      '<td class="mono">' + esc(m.placaPadrao || 'Ã¢â‚¬â€') + '</td><td>' + esc(m.tipoVeiculo || 'Ã¢â‚¬â€') + '</td>' +
-      '<td>' + esc(m.obs || 'Ã¢â‚¬â€') + '</td>' +
+      '<td>' + esc(m.telefone || '—') + '</td><td>' + esc(m.transportadora || '—') + '</td>' +
+      '<td class="mono">' + esc(m.placaPadrao || '—') + '</td><td>' + esc(m.tipoVeiculo || '—') + '</td>' +
+      '<td>' + esc(m.obs || '—') + '</td>' +
       (actions
         ? '<td class="actions">' + actions + '</td>'
         : '') + '</tr>';
@@ -744,10 +744,10 @@ function renderMotoristas() {
 }
 
 function abrirFormMotorista(idOrSeed) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nÃƒÂ£o pode alterar motoristas.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode alterar motoristas.')) return;
   const m = typeof idOrSeed === 'string' ? DB.motoristas.find(x => x.id === idOrSeed) : null;
   const seed = !m && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
-  const tipos = ['carro', 'moto', 'caminhÃƒÂ£o', 'carreta', 'utilitÃƒÂ¡rio', 'outro'];
+  const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
   abrirModal(m ? 'Editar motorista' : 'Novo motorista',
     '<div class="form-grid">' +
     fotoField() +
@@ -755,11 +755,11 @@ function abrirFormMotorista(idOrSeed) {
     campo('cm_doc', 'CPF / RG / CNH *', m ? m.documento : (seed?.documento || '')) +
     campo('cm_tel', 'Telefone', m ? m.telefone : (seed?.telefone || '')) +
     campo('cm_transp', 'Transportadora', m ? m.transportadora : (seed?.transportadora || '')) +
-    campo('cm_placa', 'Placa padrÃƒÂ£o', m ? m.placaPadrao : (seed?.placaPadrao || '')) +
-    '<div class="field"><label>Tipo de veÃƒÂ­culo</label><select id="cm_tipoVeiculo">' +
+    campo('cm_placa', 'Placa padrão', m ? m.placaPadrao : (seed?.placaPadrao || '')) +
+    '<div class="field"><label>Tipo de veículo</label><select id="cm_tipoVeiculo">' +
     tipos.map(t => '<option value="' + t + '"' + (m && m.tipoVeiculo === t ? ' selected' : '') + '>' + t + '</option>').join('') +
     '</select></div>' +
-    '<div class="field full"><label>ObservaÃƒÂ§ÃƒÂµes</label><textarea id="cm_obs">' + esc(m ? m.obs : (seed?.obs || '')) + '</textarea></div>' +
+    '<div class="field full"><label>Observações</label><textarea id="cm_obs">' + esc(m ? m.obs : (seed?.obs || '')) + '</textarea></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarMotorista(' + (m ? '\'' + m.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
@@ -769,7 +769,7 @@ function abrirFormMotorista(idOrSeed) {
 
 
 /* ============================================================
-   CRUD Ã¢â‚¬â€ VEÃƒÂCULOS
+   CRUD — VEÍCULOS
    ============================================================ */
 function renderVeiculos() {
   const q = norm(document.getElementById('veiBusca').value);
@@ -778,18 +778,18 @@ function renderVeiculos() {
   rows = sortRows(rows, 'veiculos');
   let html = '<thead><tr>' +
     thSort('veiculos', 'placa', 'Placa') + thSort('veiculos', 'tipo', 'Tipo') + thSort('veiculos', 'modelo', 'Marca/Modelo') +
-    thSort('veiculos', 'cor', 'Cor') + thSort('veiculos', 'proprietario', 'ProprietÃƒÂ¡rio/Empresa') + thSort('veiculos', 'motorista', 'Motorista') +
+    thSort('veiculos', 'cor', 'Cor') + thSort('veiculos', 'proprietario', 'Proprietário/Empresa') + thSort('veiculos', 'motorista', 'Motorista') +
     thSort('veiculos', 'obs', 'Obs.') + ((canWriteCadastros() || canDeleteCadastros()) ? '<th></th>' : '') + '</tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + ((canWriteCadastros() || canDeleteCadastros()) ? 8 : 7) + '">Nenhum veÃƒÂ­culo cadastrado.</td></tr>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + ((canWriteCadastros() || canDeleteCadastros()) ? 8 : 7) + '">Nenhum veículo cadastrado.</td></tr>';
   rows.forEach(v => {
     const actions = [
       canWriteCadastros() ? btnIcon('btn-ghost', 'Editar', 'abrirFormVeiculo(\'' + v.id + '\')', ICO.edit) : '',
       canDeleteCadastros() ? btnIcon('btn-danger', 'Excluir', 'excluirVeiculo(\'' + v.id + '\')', ICO.trash) : ''
     ].join('');
     html += '<tr><td class="mono"><strong>' + esc(v.placa) + '</strong></td><td>' + badgeTipo(v.tipo) + '</td>' +
-      '<td>' + esc(v.modelo || 'Ã¢â‚¬â€') + '</td><td>' + esc(v.cor || 'Ã¢â‚¬â€') + '</td>' +
-      '<td>' + esc(v.proprietario || 'Ã¢â‚¬â€') + '</td><td>' + esc(v.motorista || 'Ã¢â‚¬â€') + '</td>' +
-      '<td>' + esc(v.obs || 'Ã¢â‚¬â€') + '</td>' +
+      '<td>' + esc(v.modelo || '—') + '</td><td>' + esc(v.cor || '—') + '</td>' +
+      '<td>' + esc(v.proprietario || '—') + '</td><td>' + esc(v.motorista || '—') + '</td>' +
+      '<td>' + esc(v.obs || '—') + '</td>' +
       (actions
         ? '<td class="actions">' + actions + '</td>'
         : '') + '</tr>';
@@ -798,13 +798,13 @@ function renderVeiculos() {
 }
 
 function abrirFormVeiculo(idOrSeed) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nÃƒÂ£o pode alterar veÃƒÂ­culos.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode alterar veículos.')) return;
   const v = typeof idOrSeed === 'string' ? DB.veiculos.find(x => x.id === idOrSeed) : null;
   const seed = !v && idOrSeed && typeof idOrSeed === 'object' ? idOrSeed : null;
-  const tipos = ['carro', 'moto', 'caminhÃƒÂ£o', 'carreta', 'utilitÃƒÂ¡rio', 'outro'];
+  const tipos = ['carro', 'moto', 'caminhão', 'carreta', 'utilitário', 'outro'];
   const motoristas = DB.motoristas.map((m) => ({ nome: m.nome, documento: m.documento }));
   const motoristaSelecionado = normalizeDocumento(v?.motoristaDocumento || seed?.motoristaDocumento || '');
-  abrirModal(v ? 'Editar veÃƒÂ­culo' : 'Novo veÃƒÂ­culo',
+  abrirModal(v ? 'Editar veículo' : 'Novo veículo',
     '<div class="form-grid">' +
     campo('cve_placa', 'Placa *', v ? v.placa : (seed?.placa || '')) +
     '<div class="field"><label>Tipo</label><select id="cve_tipo">' +
@@ -812,12 +812,12 @@ function abrirFormVeiculo(idOrSeed) {
     '</select></div>' +
     campo('cve_modelo', 'Marca / Modelo', v ? v.modelo : (seed?.modelo || '')) +
     campo('cve_cor', 'Cor', v ? v.cor : (seed?.cor || '')) +
-    campo('cve_prop', 'ProprietÃƒÂ¡rio / Empresa', v ? v.proprietario : (seed?.proprietario || '')) +
+    campo('cve_prop', 'Proprietário / Empresa', v ? v.proprietario : (seed?.proprietario || '')) +
     '<div class="field"><label>Motorista vinculado</label><select id="cve_motorista">' +
-    '<option value="">Ã¢â‚¬â€ Nenhum Ã¢â‚¬â€</option>' +
+    '<option value="">— Nenhum —</option>' +
     motoristas.map((m) => '<option value="' + esc(m.documento) + '"' + (motoristaSelecionado === normalizeDocumento(m.documento) ? ' selected' : '') + '>' + esc(m.nome) + '</option>').join('') +
     '</select></div>' +
-    '<div class="field full"><label>ObservaÃƒÂ§ÃƒÂµes</label><textarea id="cve_obs">' + esc(v ? v.obs : (seed?.obs || '')) + '</textarea></div>' +
+    '<div class="field full"><label>Observações</label><textarea id="cve_obs">' + esc(v ? v.obs : (seed?.obs || '')) + '</textarea></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarVeiculo(' + (v ? '\'' + v.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
@@ -825,7 +825,7 @@ function abrirFormVeiculo(idOrSeed) {
 
 
 /* ============================================================
-   CRUD Ã¢â‚¬â€ RAMAIS
+   CRUD — RAMAIS
    ============================================================ */
 let ramalSort = { col: 'setor', dir: 1 };
 let ramalSoEmrg = false;
@@ -850,10 +850,10 @@ function abrirFormRamal(id) {
     '<div class="form-grid form-grid-ramal">' +
     campo('cr_setor', 'Setor / Local *', r ? r.setor : '') +
     campo('cr_ramal', 'Ramal *', r ? r.ramal : '') +
-    campo('cr_resp', 'ResponsÃƒÂ¡vel', r ? r.responsavel : '') +
+    campo('cr_resp', 'Responsável', r ? r.responsavel : '') +
     '<div class="field"><label>Celular</label><input id="cr_celular" type="text" inputmode="numeric" maxlength="13" placeholder="51 99999 9999" oninput="mascaraCelular(this)" value="' + esc(r ? fmtCelular(r.celular) : '') + '"></div>' +
     '<div class="field"><label>E-mail</label><input id="cr_email" type="email" placeholder="nome@marcher.com.br" value="' + esc(r ? r.email : '') + '"></div>' +
-    '<div class="field full"><label class="ac-proposta" style="margin:0" for="cr_emrg"><input type="checkbox" id="cr_emrg"' + (r && r.emergencia ? ' checked' : '') + '><span><strong>Contato de emergÃƒÂªncia</strong><br><span class="muted">Fica em destaque no topo da Lista de Ramais</span></span></label></div>' +
+    '<div class="field full"><label class="ac-proposta" style="margin:0" for="cr_emrg"><input type="checkbox" id="cr_emrg"' + (r && r.emergencia ? ' checked' : '') + '><span><strong>Contato de emergência</strong><br><span class="muted">Fica em destaque no topo da Lista de Ramais</span></span></label></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarRamal(' + (r ? '\'' + r.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
@@ -878,13 +878,13 @@ function abrirFormEntrega(id) {
     campo('ce_placa', 'Placa', e ? e.placa : '') +
     campo('ce_nf', 'Nota fiscal / Documento', e ? e.nf : '') +
     campo('ce_volumes', 'Quantidade de volumes', e ? e.volumes : '', 'number') +
-    campo('ce_dest', 'DestinatÃƒÂ¡rio interno *', e ? e.destinatario : '') +
-    campo('ce_setor', 'Setor responsÃƒÂ¡vel', e ? e.setor : '') +
+    campo('ce_dest', 'Destinatário interno *', e ? e.destinatario : '') +
+    campo('ce_setor', 'Setor responsável', e ? e.setor : '') +
     '<div class="field"><label>Status</label><select id="ce_status">' +
     status.map(s => '<option value="' + s[0] + '"' + (e && e.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>').join('') +
     '</select></div>' +
-    '<div class="field full"><label>DescriÃƒÂ§ÃƒÂ£o dos produtos</label><textarea id="ce_desc">' + esc(e ? e.descricao : '') + '</textarea></div>' +
-    '<div class="field full"><label>ObservaÃƒÂ§ÃƒÂµes</label><textarea id="ce_obs">' + esc(e ? e.obs : '') + '</textarea></div>' +
+    '<div class="field full"><label>Descrição dos produtos</label><textarea id="ce_desc">' + esc(e ? e.descricao : '') + '</textarea></div>' +
+    '<div class="field full"><label>Observações</label><textarea id="ce_obs">' + esc(e ? e.obs : '') + '</textarea></div>' +
     '</div><div class="form-foot">' +
     '<button class="btn btn-primary" onclick="salvarEntrega(' + (e ? '\'' + e.id + '\'' : 'null') + ')">Salvar</button>' +
     '<button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button></div>');
@@ -892,7 +892,7 @@ function abrirFormEntrega(id) {
 
 
 /* ============================================================
-   HISTÃƒâ€œRICO
+   HISTÓRICO
    ============================================================ */
 function filtrarHistorico() {
   const fNome = norm(document.getElementById('h_nome').value);
@@ -921,7 +921,7 @@ function filtrarHistorico() {
 function renderHistorico() {
   const rows = sortRows(filtrarHistorico(), 'historico');
   let html = '<thead><tr>' +
-    thSort('historico', 'entrada', 'Entrada') + thSort('historico', 'saida', 'SaÃƒÂ­da') + thSort('historico', 'tipo', 'Tipo') +
+    thSort('historico', 'entrada', 'Entrada') + thSort('historico', 'saida', 'Saída') + thSort('historico', 'tipo', 'Tipo') +
     thSort('historico', 'nome', 'Nome') + thSort('historico', 'documento', 'Documento') + thSort('historico', 'empresa', 'Empresa') +
     thSort('historico', 'placa', 'Placa') + thSort('historico', 'motivo', 'Motivo') + thSort('historico', 'visitado', 'Visitado') +
     thSort('historico', 'status', 'Status') + '</tr></thead><tbody>';
@@ -929,9 +929,9 @@ function renderHistorico() {
   rows.forEach(a => {
     html += '<tr><td class="mono">' + fmtDataHora(a.entrada) + '</td><td class="mono">' + fmtDataHora(a.saida) + '</td>' +
       '<td>' + badgeTipo(a.tipo) + '</td><td><strong>' + esc(a.nome) + '</strong></td>' +
-      '<td class="mono">' + esc(a.documento) + '</td><td>' + esc(a.empresa || 'Ã¢â‚¬â€') + '</td>' +
-      '<td class="mono">' + esc(a.placa || 'Ã¢â‚¬â€') + '</td><td>' + esc(a.motivo || 'Ã¢â‚¬â€') + '</td>' +
-      '<td>' + esc(a.visitado || 'Ã¢â‚¬â€') + '</td><td>' + badgeStatus(a.status) + '</td></tr>';
+      '<td class="mono">' + esc(a.documento) + '</td><td>' + esc(a.empresa || '—') + '</td>' +
+      '<td class="mono">' + esc(a.placa || '—') + '</td><td>' + esc(a.motivo || '—') + '</td>' +
+      '<td>' + esc(a.visitado || '—') + '</td><td>' + badgeStatus(a.status) + '</td></tr>';
   });
   document.getElementById('histTable').innerHTML = html + '</tbody>';
 }
@@ -941,7 +941,7 @@ function limparFiltrosHistorico() {
   document.getElementById('h_tipo').value = '';
   document.getElementById('h_status').value = '';
   renderHistorico();
-  toast('Filtros do histÃƒÂ³rico limpos.');
+  toast('Filtros do histórico limpos.');
 }
 
 function limparTodosFiltros() {
@@ -956,7 +956,7 @@ function limparTodosFiltros() {
 }
 
 /* ============================================================
-   EXPORTAÃƒâ€¡ÃƒÆ’O / BACKUP
+   EXPORTAÇÃO / BACKUP
    ============================================================ */
 function downloadArquivo(nome, conteudo, mime) {
   const blob = new Blob([conteudo], { type: mime });
@@ -982,7 +982,7 @@ function toCSV(headers, rows) {
 }
 
 function exportarHistoricoCSV() {
-  if (!ensureAllowed(canAccessReports(), 'Seu perfil nÃƒÂ£o pode gerar relatÃƒÂ³rios.')) return;
+  if (!ensureAllowed(canAccessReports(), 'Seu perfil não pode gerar relatórios.')) return;
   const rows = filtrarHistorico();
   if (!rows.length) { toast('Nenhum registro para exportar.', 'warn'); return; }
   const csv = toCSV(
@@ -990,14 +990,14 @@ function exportarHistoricoCSV() {
     rows.map(a => [fmtDataHora(a.entrada), fmtDataHora(a.saida), a.tipo, a.nome, a.documento, a.empresa, a.telefone, a.placa, a.motivo, a.visitado, a.status, a.obs])
   );
   downloadArquivo('historico_portaria_' + dataArquivo() + '.csv', csv, 'text/csv;charset=utf-8');
-  toast('HistÃƒÂ³rico exportado em CSV (' + rows.length + ' registros).');
+  toast('Histórico exportado em CSV (' + rows.length + ' registros).');
 }
 
 function exportarEntregasCSV() {
-  if (!ensureAllowed(canAccessReports(), 'Seu perfil nÃƒÂ£o pode gerar relatÃƒÂ³rios.')) return;
+  if (!ensureAllowed(canAccessReports(), 'Seu perfil não pode gerar relatórios.')) return;
   if (!DB.entregas.length) { toast('Nenhuma entrega para exportar.', 'warn'); return; }
   const csv = toCSV(
-    ['Data', 'Tipo', 'Fornecedor/Transportadora', 'Motorista', 'Placa', 'NF/Documento', 'Descricao', 'Volumes', 'DestinatÃƒÂ¡rio', 'Setor', 'Status', 'Observacoes'],
+    ['Data', 'Tipo', 'Fornecedor/Transportadora', 'Motorista', 'Placa', 'NF/Documento', 'Descricao', 'Volumes', 'Destinatário', 'Setor', 'Status', 'Observacoes'],
     DB.entregas.map(e => [fmtDataHora(e.data), e.tipo, e.fornecedor, e.motorista, e.placa, e.nf, e.descricao, e.volumes, e.destinatario, e.setor, e.status, e.obs])
   );
   downloadArquivo('entregas_' + dataArquivo() + '.csv', csv, 'text/csv;charset=utf-8');
@@ -1031,7 +1031,7 @@ function restaurarJSON(ev) {
       const obj = JSON.parse(reader.result);
       const dados = obj && obj.dados ? obj.dados : obj;
       if (!dados || !Array.isArray(dados.acessos)) {
-        toast('Arquivo invÃƒÂ¡lido: nÃƒÂ£o ÃƒÂ© um backup do Controla Marcher.', 'error');
+        toast('Arquivo inválido: não é um backup do Controla Marcher.', 'error');
         return;
       }
       DB = {
@@ -1079,10 +1079,10 @@ function archiveMainLabel(tipo, row) {
 
 function archiveSubLabel(tipo, row) {
   if (tipo === 'visitantes') return row.documento || 'Sem documento';
-  if (tipo === 'motoristas') return (row.documento || 'Sem documento') + (row.transportadora ? ' Ã‚Â· ' + row.transportadora : '');
-  if (tipo === 'veiculos') return (row.modelo || 'Sem modelo') + (row.proprietario ? ' Ã‚Â· ' + row.proprietario : '');
-  if (tipo === 'ramais') return (row.ramal || 'Sem ramal') + (row.responsavel ? ' Ã‚Â· ' + row.responsavel : '');
-  if (tipo === 'entregas') return (row.nf || 'Sem NF') + (row.destinatario ? ' Ã‚Â· ' + row.destinatario : '');
+  if (tipo === 'motoristas') return (row.documento || 'Sem documento') + (row.transportadora ? ' · ' + row.transportadora : '');
+  if (tipo === 'veiculos') return (row.modelo || 'Sem modelo') + (row.proprietario ? ' · ' + row.proprietario : '');
+  if (tipo === 'ramais') return (row.ramal || 'Sem ramal') + (row.responsavel ? ' · ' + row.responsavel : '');
+  if (tipo === 'entregas') return (row.nf || 'Sem NF') + (row.destinatario ? ' · ' + row.destinatario : '');
   return row.id || '';
 }
 
@@ -1093,7 +1093,7 @@ function archiveDeletedByLabel(row) {
     const nome = ((user.nome || '') + ' ' + (user.sobrenome || '')).trim();
     return nome || user.email || userId;
   }
-  return userId || 'NÃƒÂ£o identificado';
+  return userId || 'Não identificado';
 }
 
 function renderArquivados() {
@@ -1150,9 +1150,9 @@ async function carregarAuditoria(force) {
 
 function auditActionLabel(action) {
   const key = String(action || '').toUpperCase();
-  if (key === 'INSERT') return 'CriaÃƒÂ§ÃƒÂ£o';
-  if (key === 'UPDATE') return 'EdiÃƒÂ§ÃƒÂ£o';
-  if (key === 'DELETE') return 'ExclusÃƒÂ£o';
+  if (key === 'INSERT') return 'Criação';
+  if (key === 'UPDATE') return 'Edição';
+  if (key === 'DELETE') return 'Exclusão';
   return key || 'A\u00E7\u00E3o';
 }
 
@@ -1189,11 +1189,11 @@ function auditMainLabel(row) {
 function auditSubLabel(row) {
   const ref = pickAuditRecord(row);
   if (row.tabela === 'visitantes') return ref.documento || 'Sem documento';
-  if (row.tabela === 'motoristas') return (ref.documento || 'Sem documento') + (ref.transportadora ? ' Ã‚Â· ' + ref.transportadora : '');
-  if (row.tabela === 'veiculos') return (ref.modelo || 'Sem modelo') + (ref.proprietario ? ' Ã‚Â· ' + ref.proprietario : '');
-  if (row.tabela === 'acessos') return (ref.documento || 'Sem documento') + (ref.empresa ? ' Ã‚Â· ' + ref.empresa : '');
-  if (row.tabela === 'ramais') return (ref.ramal || 'Sem ramal') + (ref.responsavel ? ' Ã‚Â· ' + ref.responsavel : '');
-  if (row.tabela === 'entregas') return (ref.nf || 'Sem NF') + (ref.destinatario ? ' Ã‚Â· ' + ref.destinatario : '');
+  if (row.tabela === 'motoristas') return (ref.documento || 'Sem documento') + (ref.transportadora ? ' · ' + ref.transportadora : '');
+  if (row.tabela === 'veiculos') return (ref.modelo || 'Sem modelo') + (ref.proprietario ? ' · ' + ref.proprietario : '');
+  if (row.tabela === 'acessos') return (ref.documento || 'Sem documento') + (ref.empresa ? ' · ' + ref.empresa : '');
+  if (row.tabela === 'ramais') return (ref.ramal || 'Sem ramal') + (ref.responsavel ? ' · ' + ref.responsavel : '');
+  if (row.tabela === 'entregas') return (ref.nf || 'Sem NF') + (ref.destinatario ? ' · ' + ref.destinatario : '');
   return row.registro_id || '';
 }
 
@@ -1234,32 +1234,32 @@ searchInput.addEventListener('input', debounce(function () {
 
   DB.acessos.forEach(a => {
     if (norm(a.nome).includes(q) || norm(a.documento).includes(q) || norm(a.placa).includes(q) || norm(a.empresa).includes(q)) {
-      hits.push({ type: 'Acesso', view: 'historico', main: a.nome, sub: a.documento + ' Ã‚Â· ' + (a.empresa || 'sem empresa') + ' Ã‚Â· ' + fmtDataHora(a.entrada), status: a.status });
+      hits.push({ type: 'Acesso', view: 'historico', main: a.nome, sub: a.documento + ' · ' + (a.empresa || 'sem empresa') + ' · ' + fmtDataHora(a.entrada), status: a.status });
     }
   });
   DB.visitantes.forEach(v => {
     if (norm(v.nome).includes(q) || norm(v.documento).includes(q) || norm(v.empresa).includes(q)) {
-      hits.push({ type: 'Visitante', view: 'visitantes', main: v.nome, sub: v.documento + ' Ã‚Â· ' + (v.empresa || 'Ã¢â‚¬â€') });
+      hits.push({ type: 'Visitante', view: 'visitantes', main: v.nome, sub: v.documento + ' · ' + (v.empresa || '—') });
     }
   });
   DB.motoristas.forEach(m => {
     if (norm(m.nome).includes(q) || norm(m.documento).includes(q) || norm(m.placaPadrao).includes(q) || norm(m.transportadora).includes(q)) {
-      hits.push({ type: 'Motorista', view: 'motoristas', main: m.nome, sub: (m.transportadora || 'Ã¢â‚¬â€') + ' Ã‚Â· ' + (m.placaPadrao || 'sem placa') });
+      hits.push({ type: 'Motorista', view: 'motoristas', main: m.nome, sub: (m.transportadora || '—') + ' · ' + (m.placaPadrao || 'sem placa') });
     }
   });
   DB.veiculos.forEach(v => {
     if (norm(v.placa).includes(q) || norm(v.modelo).includes(q) || norm(v.proprietario).includes(q)) {
-      hits.push({ type: 'VeÃƒÂ­culo', view: 'veiculos', main: v.placa + ' Ã¢â‚¬â€ ' + (v.modelo || ''), sub: v.proprietario || 'Ã¢â‚¬â€' });
+      hits.push({ type: 'Veículo', view: 'veiculos', main: v.placa + ' — ' + (v.modelo || ''), sub: v.proprietario || '—' });
     }
   });
   DB.entregas.forEach(e => {
     if (norm(e.fornecedor).includes(q) || norm(e.nf).includes(q) || norm(e.placa).includes(q) || norm(e.motorista).includes(q)) {
-      hits.push({ type: 'Entrega', view: 'entregas', main: e.fornecedor + ' Ã‚Â· ' + (e.nf || 'sem NF'), sub: fmtDataHora(e.data) + ' Ã‚Â· ' + e.status });
+      hits.push({ type: 'Entrega', view: 'entregas', main: e.fornecedor + ' · ' + (e.nf || 'sem NF'), sub: fmtDataHora(e.data) + ' · ' + e.status });
     }
   });
   DB.ramais.forEach(r => {
     if (norm(r.setor).includes(q) || norm(r.ramal).includes(q) || norm(r.responsavel).includes(q) || norm(r.celular).includes(q) || norm(r.email).includes(q)) {
-      hits.push({ type: 'Ramal', view: 'ramais', main: r.setor + ' Ã¢â‚¬â€ ramal ' + r.ramal, sub: (r.responsavel || 'Ã¢â‚¬â€') + (r.celular ? ' Ã‚Â· ' + r.celular : '') });
+      hits.push({ type: 'Ramal', view: 'ramais', main: r.setor + ' — ramal ' + r.ramal, sub: (r.responsavel || '—') + (r.celular ? ' · ' + r.celular : '') });
     }
   });
 
@@ -1268,12 +1268,12 @@ searchInput.addEventListener('input', debounce(function () {
   } else {
     searchResults.innerHTML = hits.filter((h) => canAccessView(h.view)).slice(0, 12).map((h, i) =>
       '<div class="sr-item" data-view="' + h.view + '">' +
-      '<div class="sr-type">' + h.type + (h.status ? ' Ã‚Â· ' + h.status : '') + '</div>' +
+      '<div class="sr-type">' + h.type + (h.status ? ' · ' + h.status : '') + '</div>' +
       '<div><strong>' + esc(h.main) + '</strong></div>' +
       '<div class="muted">' + esc(h.sub) + '</div></div>'
     ).join('');
     if (!searchResults.innerHTML) {
-      searchResults.innerHTML = '<div class="sr-empty">Nenhum resultado disponÃƒÂ­vel para o seu perfil.</div>';
+      searchResults.innerHTML = '<div class="sr-empty">Nenhum resultado disponível para o seu perfil.</div>';
     }
     searchResults.querySelectorAll('.sr-item').forEach(el => {
       el.addEventListener('click', () => {
@@ -1293,7 +1293,7 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') { searchResults.classList.remove('open'); fecharModal(); }
 });
 
-/* ---------- Helpers de formulÃƒÂ¡rio ---------- */
+/* ---------- Helpers de formulário ---------- */
 function campo(id, label, valor, tipo) {
   const obrig = label.includes('*');
   const lbl = label.replace(' *', '');
@@ -1302,10 +1302,10 @@ function campo(id, label, valor, tipo) {
 }
 
 /* ============================================================
-   AUTOCOMPLETE Ã¢â‚¬â€ Controle de Entrada (puxa dos cadastros)
+   AUTOCOMPLETE — Controle de Entrada (puxa dos cadastros)
    ============================================================ */
 
-/* Match tolerante: ignora acento/caixa e tambÃƒÂ©m pontuaÃƒÂ§ÃƒÂ£o
+/* Match tolerante: ignora acento/caixa e também pontuação
    (ex.: "12345678" casa com "123.456.78-9"; "abc1d23" casa com "ABC1D23"). */
 function temMatch(campo, q) {
   const c = norm(campo);
@@ -1315,7 +1315,7 @@ function temMatch(campo, q) {
   return qs.length >= 2 && cs.includes(qs);
 }
 
-/* SugestÃƒÂµes de PESSOA (visitantes + motoristas) Ã¢â‚¬â€ usado em Nome e Documento. */
+/* Sugestões de PESSOA (visitantes + motoristas) — usado em Nome e Documento. */
 function sugestoesPessoa(q) {
   const out = [];
   DB.visitantes.forEach(v => {
@@ -1323,7 +1323,7 @@ function sugestoesPessoa(q) {
       out.push({
         tag: 'Visitante', inativo: !v.ativo,
         label: v.nome,
-        sub: v.documento + (v.empresa ? ' Ã‚Â· ' + v.empresa : '') + (v.telefone ? ' Ã‚Â· ' + v.telefone : ''),
+        sub: v.documento + (v.empresa ? ' · ' + v.empresa : '') + (v.telefone ? ' · ' + v.telefone : ''),
         payload: { tipo: 'visitante', nome: v.nome, documento: v.documento, telefone: v.telefone || '', empresa: v.empresa || '', placa: '' }
       });
     }
@@ -1333,7 +1333,7 @@ function sugestoesPessoa(q) {
       out.push({
         tag: 'Motorista', inativo: m.ativo === false,
         label: m.nome,
-        sub: m.documento + (m.transportadora ? ' Ã‚Â· ' + m.transportadora : '') + (m.placaPadrao ? ' Ã‚Â· ' + m.placaPadrao : ''),
+        sub: m.documento + (m.transportadora ? ' · ' + m.transportadora : '') + (m.placaPadrao ? ' · ' + m.placaPadrao : ''),
         payload: { tipo: 'motorista', nome: m.nome, documento: m.documento, telefone: m.telefone || '', empresa: m.transportadora || '', placa: m.placaPadrao || '' }
       });
     }
@@ -1341,7 +1341,7 @@ function sugestoesPessoa(q) {
   return out;
 }
 
-/* SugestÃƒÂµes de VEÃƒÂCULO (veÃƒÂ­culos cadastrados + placas padrÃƒÂ£o de motoristas) Ã¢â‚¬â€ usado em Placa.
+/* Sugestões de VEÍCULO (veículos cadastrados + placas padrão de motoristas) — usado em Placa.
    Ao escolher, tenta completar com o motorista vinculado. */
 function sugestoesVeiculo(q) {
   const out = [];
@@ -1354,9 +1354,9 @@ function sugestoesVeiculo(q) {
         return normalizePlaca(m.placaPadrao) && normalizePlaca(m.placaPadrao) === normalizePlaca(v.placa);
       }) || null;
       out.push({
-        tag: 'VeÃƒÂ­culo',
-        label: v.placa + (v.modelo ? ' Ã¢â‚¬â€ ' + v.modelo : ''),
-        sub: (v.proprietario || 'sem proprietÃƒÂ¡rio') + (v.motorista ? ' Ã‚Â· ' + v.motorista : ''),
+        tag: 'Veículo',
+        label: v.placa + (v.modelo ? ' — ' + v.modelo : ''),
+        sub: (v.proprietario || 'sem proprietário') + (v.motorista ? ' · ' + v.motorista : ''),
         payload: {
           tipo: mot ? 'motorista' : '',
           placa: v.placa,
@@ -1371,9 +1371,9 @@ function sugestoesVeiculo(q) {
   DB.motoristas.forEach(m => {
     if (m.placaPadrao && temMatch(m.placaPadrao, q) && !placasVistas.has(normalizePlaca(m.placaPadrao))) {
       out.push({
-        tag: 'Placa padrÃƒÂ£o',
-        label: m.placaPadrao + ' Ã¢â‚¬â€ ' + m.nome,
-        sub: 'Motorista' + (m.transportadora ? ' Ã‚Â· ' + m.transportadora : ''),
+        tag: 'Placa padrão',
+        label: m.placaPadrao + ' — ' + m.nome,
+        sub: 'Motorista' + (m.transportadora ? ' · ' + m.transportadora : ''),
         payload: { tipo: 'motorista', placa: m.placaPadrao, nome: m.nome, documento: m.documento, telefone: m.telefone || '', empresa: m.transportadora || '' }
       });
     }
@@ -1381,8 +1381,8 @@ function sugestoesVeiculo(q) {
   return out;
 }
 
-/* Preenche o formulÃƒÂ¡rio de entrada sem apagar o que jÃƒÂ¡ foi digitado
-   (sÃƒÂ³ sobrescreve campos para os quais o cadastro tem valor). */
+/* Preenche o formulário de entrada sem apagar o que já foi digitado
+   (só sobrescreve campos para os quais o cadastro tem valor). */
 function preencherEntradaCom(p) {
   const set = (id, val) => { if (val != null && val !== '') document.getElementById(id).value = val; };
   if (p.tipo) document.getElementById('e_tipo').value = p.tipo;
@@ -1394,7 +1394,7 @@ function preencherEntradaCom(p) {
   toast('Cadastro carregado: ' + (p.nome || p.placa));
 }
 
-/* Componente genÃƒÂ©rico de autocomplete preso a um input. */
+/* Componente genérico de autocomplete preso a um input. */
 function setupAutocomplete(inputId, getSugestoes, aoSelecionar) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -1461,9 +1461,9 @@ setupAutocomplete('e_placa', sugestoesVeiculo, preencherEntradaCom);
 bindDocumentoField('e_doc');
 
 /* ============================================================
-   ÃƒÂREA DO USUÃƒÂRIO (protÃƒÂ³tipo Ã¢â‚¬â€ perfis de acesso evoluem depois)
+   ÁREA DO USUÁRIO (protótipo — perfis de acesso evoluem depois)
    ============================================================ */
-const LIMITE_NOME = 18;   // nome + sobrenome exibidos no rodapÃƒÂ©
+const LIMITE_NOME = 18;   // nome + sobrenome exibidos no rodapé
 const USER_KEY = 'controlaMarcher_user';
 
 let USUARIO = { nome: 'Ricardo', sobrenome: 'Guimaraes', celular: '', email: '', perfil: ROLE_SUPER_ADMIN, foto: '' };
@@ -1516,14 +1516,14 @@ async function recarregarUsuarios() {
     PERFIS_USUARIOS = await loadProfilesRemote();
     renderUsuarios();
   } catch (e) {
-    toast(e.message || 'Falha ao carregar usuÃƒÂ¡rios.', 'error');
+    toast(e.message || 'Falha ao carregar usuários.', 'error');
   }
 }
 
 async function salvarPerfilUsuario(id) {
   if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem alterar perfis.')) return;
   if (USUARIO.id && id === USUARIO.id) {
-    toast('Seu prÃƒÂ³prio perfil deve ser mantido como estÃƒÂ¡ nesta tela.', 'warn');
+    toast('Seu próprio perfil deve ser mantido como está nesta tela.', 'warn');
     return;
   }
   const el = document.getElementById('perfil_' + id);
@@ -1531,7 +1531,7 @@ async function salvarPerfilUsuario(id) {
   const perfilDestino = normalizeRole(el.value);
   const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
   if (!canEditUserRole(usuarioAlvo?.perfil) || !getAssignableRoles().includes(perfilDestino)) {
-    toast('Seu perfil nÃƒÂ£o pode aplicar essa alteraÃƒÂ§ÃƒÂ£o.', 'warn');
+    toast('Seu perfil não pode aplicar essa alteração.', 'warn');
     return;
   }
   try {
@@ -1544,9 +1544,9 @@ async function salvarPerfilUsuario(id) {
 }
 
 function abrirAjudaCadastroUsuario() {
-  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuÃƒÂ¡rios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuários.')) return;
   const perfisDisponiveis = getAssignableRoles();
-  abrirModal('Cadastrar usuÃƒÂ¡rio',
+  abrirModal('Cadastrar usuário',
     '<div class="form-grid">' +
     '<div class="field full"><label>E-mail <span class="req">*</span></label><input id="novoUserEmail" type="email" placeholder="nome@empresa.com.br"></div>' +
     '<div class="field full"><label>Perfil inicial</label><select id="novoUserPerfil">' +
@@ -1559,15 +1559,15 @@ function abrirAjudaCadastroUsuario() {
 }
 
 async function cadastrarUsuarioConvite() {
-  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuÃƒÂ¡rios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem cadastrar usuários.')) return;
   const email = document.getElementById('novoUserEmail')?.value.trim().toLowerCase();
   const perfil = normalizeRole(document.getElementById('novoUserPerfil')?.value || ROLE_CONSULTA);
   if (!email) {
-    toast('Informe o e-mail do usuÃƒÂ¡rio.', 'error');
+    toast('Informe o e-mail do usuário.', 'error');
     return;
   }
   if (!getAssignableRoles().includes(perfil)) {
-    toast('Seu perfil nÃƒÂ£o pode convidar usuÃƒÂ¡rios com esse papel.', 'warn');
+    toast('Seu perfil não pode convidar usuários com esse papel.', 'warn');
     return;
   }
   try {
@@ -1696,15 +1696,15 @@ async function confirmarNovaSenhaUsuario(id) {
   }
 }
 async function alternarStatusUsuario(id) {
-  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem alterar usuÃƒÂ¡rios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem alterar usuários.')) return;
   const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
   if (!usuarioAlvo) return;
   if (USUARIO.id && id === USUARIO.id) {
-    toast('VocÃƒÂª nÃƒÂ£o pode desativar seu prÃƒÂ³prio usuÃƒÂ¡rio.', 'warn');
+    toast('Você não pode desativar seu próprio usuário.', 'warn');
     return;
   }
   if (!canEditUserRole(usuarioAlvo.perfil)) {
-    toast('Seu perfil nÃƒÂ£o pode alterar este usuÃƒÂ¡rio.', 'warn');
+    toast('Seu perfil não pode alterar este usuário.', 'warn');
     return;
   }
   const proximoAtivo = usuarioAlvo.ativo === false;
@@ -1713,30 +1713,30 @@ async function alternarStatusUsuario(id) {
     await recarregarUsuarios();
     toast(proximoAtivo ? 'Usu\u00E1rio ativado.' : 'Usu\u00E1rio desativado.');
   } catch (e) {
-    toast(e.message || 'Falha ao alterar status do usuÃƒÂ¡rio.', 'error');
+    toast(e.message || 'Falha ao alterar status do usuário.', 'error');
   }
 }
 
 function excluirUsuario(id) {
-  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem excluir usuÃƒÂ¡rios.')) return;
+  if (!ensureAllowed(canManageUsers(), 'Somente Admin e Super Admin podem excluir usuários.')) return;
   const usuarioAlvo = (PERFIS_USUARIOS || []).find((u) => u.id === id);
   if (!usuarioAlvo) return;
   if (USUARIO.id && id === USUARIO.id) {
-    toast('VocÃƒÂª nÃƒÂ£o pode excluir seu prÃƒÂ³prio usuÃƒÂ¡rio.', 'warn');
+    toast('Você não pode excluir seu próprio usuário.', 'warn');
     return;
   }
   if (!canEditUserRole(usuarioAlvo.perfil)) {
-    toast('Seu perfil nÃƒÂ£o pode excluir este usuÃƒÂ¡rio.', 'warn');
+    toast('Seu perfil não pode excluir este usuário.', 'warn');
     return;
   }
   const nome = ((usuarioAlvo.nome || '') + ' ' + (usuarioAlvo.sobrenome || '')).trim() || usuarioAlvo.email || 'Sem nome';
-  confirmar('Excluir o usuÃƒÂ¡rio "' + nome + '"? Esta aÃƒÂ§ÃƒÂ£o nÃƒÂ£o pode ser desfeita.', async function () {
+  confirmar('Excluir o usuário "' + nome + '"? Esta ação não pode ser desfeita.', async function () {
     try {
       await deleteUserRemote(id);
       await recarregarUsuarios();
       toast('Usu\u00E1rio exclu\u00EDdo.');
     } catch (e) {
-      toast(e.message || 'Falha ao excluir usuÃƒÂ¡rio.', 'error');
+      toast(e.message || 'Falha ao excluir usuário.', 'error');
     }
   });
 }
@@ -1747,7 +1747,7 @@ async function salvarUsuario() {
   if (!nome) { toast('Informe ao menos o nome.', 'error'); return; }
   const completo = (nome + ' ' + sobrenome).trim();
   if (completo.length > LIMITE_NOME) {
-    toast('Nome + sobrenome deve ter atÃƒÂ© ' + LIMITE_NOME + ' caracteres (atual: ' + completo.length + ').', 'error');
+    toast('Nome + sobrenome deve ter até ' + LIMITE_NOME + ' caracteres (atual: ' + completo.length + ').', 'error');
     return;
   }
   USUARIO.nome = nome;
@@ -1769,7 +1769,7 @@ async function salvarUsuario() {
 }
 
 function oferecerCadastro(reg) {
-  if (!ensureAllowed(canQuickSaveCadastros(), 'Seu perfil nÃƒÂ£o pode salvar cadastros rÃƒÂ¡pidos pela entrada.')) return false;
+  if (!ensureAllowed(canQuickSaveCadastros(), 'Seu perfil não pode salvar cadastros rápidos pela entrada.')) return false;
   const propostas = [];
   const docN = norm(reg.documento).replace(/[^a-z0-9]/g, '');
   let tabela = null;
@@ -1789,7 +1789,7 @@ function oferecerCadastro(reg) {
             DB.motoristas.push(novo);
             return { entity: 'motoristas', row: novo };
           }
-          const novo = { id: uid(), nome: reg.nome, documento: reg.documento, telefone: reg.telefone || '', empresa: reg.empresa || '', obs: reg.tipo === 'prestador' ? 'Prestador de serviÃƒÂ§o' : '', ativo: true };
+          const novo = { id: uid(), nome: reg.nome, documento: reg.documento, telefone: reg.telefone || '', empresa: reg.empresa || '', obs: reg.tipo === 'prestador' ? 'Prestador de serviço' : '', ativo: true };
           DB.visitantes.push(novo);
           return { entity: 'visitantes', row: novo };
         }
@@ -1801,7 +1801,7 @@ function oferecerCadastro(reg) {
     const existe = DB.veiculos.some((v) => norm(v.placa) === norm(reg.placa));
     if (!existe) {
       propostas.push({
-        titulo: 'Cadastrar veÃƒÂ­culo',
+        titulo: 'Cadastrar veículo',
         linhas: [reg.placa, reg.empresa, reg.tipo === 'motorista' ? ('Motorista: ' + reg.nome) : ''].filter(Boolean),
         salvar: () => {
           const novo = { id: uid(), placa: reg.placa, tipo: 'outro', modelo: '', cor: '', proprietario: reg.empresa || '', motorista: reg.tipo === 'motorista' ? reg.nome : '', obs: '' };
@@ -1815,14 +1815,14 @@ function oferecerCadastro(reg) {
   if (!propostas.length) return false;
 
   const corpo =
-    '<p class="confirm-text">Estes dados ainda nÃƒÂ£o estÃƒÂ£o nos cadastros. Salvar para agilizar as prÃƒÂ³ximas entradas?</p>' +
+    '<p class="confirm-text">Estes dados ainda não estão nos cadastros. Salvar para agilizar as próximas entradas?</p>' +
     propostas.map((p, i) =>
       '<label class="ac-proposta" for="prop_' + i + '"><input type="checkbox" id="prop_' + i + '" checked>' +
       '<span><strong>' + esc(p.titulo) + '</strong><br><span class="muted">' + esc(p.linhas.join(' | ')) + '</span></span></label>'
     ).join('') +
     '<div class="form-foot" style="margin-top:14px">' +
     '<button class="btn btn-primary" id="propSalvar">Salvar selecionados</button>' +
-    '<button class="btn btn-ghost" onclick="fecharModal()">Agora nÃƒÂ£o</button></div>';
+    '<button class="btn btn-ghost" onclick="fecharModal()">Agora não</button></div>';
 
   abrirModal('Atualizar cadastros', corpo, true);
   document.getElementById('propSalvar').onclick = function () {
@@ -1849,30 +1849,30 @@ function renderSaida() {
     thSort('saida', 'entrada', 'Entrada') + thSort('saida', 'tipo', 'Tipo') + thSort('saida', 'nome', 'Nome') +
     thSort('saida', 'documento', 'Documento') + thSort('saida', 'empresa', 'Empresa') + thSort('saida', 'placa', 'Placa') +
     thSort('saida', 'visitado', 'Visitado') + (canWriteOperacao() ? '<th></th>' : '') + '</tr></thead><tbody>';
-  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteOperacao() ? 8 : 7) + '">NinguÃƒÂ©m dentro no momento.</td></tr>';
+  if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteOperacao() ? 8 : 7) + '">Ninguém dentro no momento.</td></tr>';
   rows.forEach(a => {
     html += '<tr><td class="mono">' + fmtDataHora(a.entrada) + '</td><td>' + badgeTipo(a.tipo) + '</td>' +
       '<td><strong>' + esc(a.nome) + '</strong></td><td class="mono">' + esc(a.documento) + '</td>' +
-      '<td>' + esc(a.empresa || 'Ã¢â‚¬â€') + '</td><td class="mono">' + esc(a.placa || 'Ã¢â‚¬â€') + '</td>' +
-      '<td>' + esc(a.visitado || 'Ã¢â‚¬â€') + '</td>' +
-      (canWriteOperacao() ? '<td>' + btnIcon('btn-success', 'Registrar saÃƒÂ­da', 'registrarSaida(\'' + a.id + '\')', ICO.exit) + '</td>' : '') + '</tr>';
+      '<td>' + esc(a.empresa || '—') + '</td><td class="mono">' + esc(a.placa || '—') + '</td>' +
+      '<td>' + esc(a.visitado || '—') + '</td>' +
+      (canWriteOperacao() ? '<td>' + btnIcon('btn-success', 'Registrar saída', 'registrarSaida(\'' + a.id + '\')', ICO.exit) + '</td>' : '') + '</tr>';
   });
   document.getElementById('saidaTable').innerHTML = html + '</tbody>';
 }
 
 function registrarSaida(id) {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nÃƒÂ£o pode registrar saÃƒÂ­das.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode registrar saídas.')) return;
   const a = DB.acessos.find(x => x.id === id);
   if (!a) return;
   a.saida = new Date().toISOString();
   a.status = 'Saiu';
   saveDB('acessos', a);
-  toast('SaÃƒÂ­da registrada: ' + a.nome);
+  toast('Saída registrada: ' + a.nome);
   renderAll();
 }
 
 async function salvarVisitante(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nÃƒÂ£o pode salvar visitantes.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode salvar visitantes.')) return;
   const nome = document.getElementById('cv_nome').value.trim();
   const doc = document.getElementById('cv_doc').value.trim();
   if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
@@ -1913,7 +1913,7 @@ async function salvarVisitante(id) {
 function excluirVisitante(id) {
   if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir visitantes.')) return;
   const v = DB.visitantes.find(x => x.id === id);
-  confirmar('Excluir o visitante "' + v.nome + '"? O registro serÃƒÂ¡ arquivado para evitar perda de dados.', async function () {
+  confirmar('Excluir o visitante "' + v.nome + '"? O registro será arquivado para evitar perda de dados.', async function () {
     DB.visitantes = DB.visitantes.filter(x => x.id !== id);
     softDeleteRow('visitantes', v);
     renderVisitantes();
@@ -1922,7 +1922,7 @@ function excluirVisitante(id) {
 }
 
 async function salvarMotorista(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nÃƒÂ£o pode salvar motoristas.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode salvar motoristas.')) return;
   const nome = document.getElementById('cm_nome').value.trim();
   const doc = document.getElementById('cm_doc').value.trim();
   if (!nome || !doc) { toast('Preencha Nome e Documento.', 'error'); return; }
@@ -1964,7 +1964,7 @@ async function salvarMotorista(id) {
 function excluirMotorista(id) {
   if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir motoristas.')) return;
   const m = DB.motoristas.find(x => x.id === id);
-  confirmar('Excluir o motorista "' + m.nome + '"? O registro serÃƒÂ¡ arquivado para evitar perda de dados.', async function () {
+  confirmar('Excluir o motorista "' + m.nome + '"? O registro será arquivado para evitar perda de dados.', async function () {
     DB.motoristas = DB.motoristas.filter(x => x.id !== id);
     softDeleteRow('motoristas', m);
     renderMotoristas();
@@ -1973,9 +1973,9 @@ function excluirMotorista(id) {
 }
 
 function salvarVeiculo(id) {
-  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil nÃƒÂ£o pode salvar veÃƒÂ­culos.')) return;
+  if (!ensureAllowed(canWriteCadastros(), 'Seu perfil não pode salvar veículos.')) return;
   const placa = normalizePlaca(document.getElementById('cve_placa').value);
-  if (!placa) { toast('Informe a placa do veÃƒÂ­culo.', 'error'); return; }
+  if (!placa) { toast('Informe a placa do veículo.', 'error'); return; }
   const motoristaDocumento = document.getElementById('cve_motorista').value.trim();
   const motoristaVinculado = motoristaDocumento
     ? DB.motoristas.find((m) => normalizeDocumento(m.documento) === normalizeDocumento(motoristaDocumento))
@@ -1994,11 +1994,11 @@ function salvarVeiculo(id) {
   if (id) {
     row = DB.veiculos.find(x => x.id === id);
     Object.assign(row, dados);
-    toast('VeÃƒÂ­culo atualizado.');
+    toast('Veículo atualizado.');
   } else {
     row = Object.assign({ id: uid() }, dados);
     DB.veiculos.push(row);
-    toast('VeÃƒÂ­culo cadastrado.');
+    toast('Veículo cadastrado.');
   }
   saveDB('veiculos', row);
   fecharModal();
@@ -2007,24 +2007,24 @@ function salvarVeiculo(id) {
 }
 
 function excluirVeiculo(id) {
-  if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir veÃƒÂ­culos.')) return;
+  if (!ensureAllowed(canDeleteCadastros(), 'Somente Admin e Super Admin podem excluir veículos.')) return;
   const v = DB.veiculos.find(x => x.id === id);
-  confirmar('Excluir o veÃƒÂ­culo "' + v.placa + '"? O registro serÃƒÂ¡ arquivado para evitar perda de dados.', function () {
+  confirmar('Excluir o veículo "' + v.placa + '"? O registro será arquivado para evitar perda de dados.', function () {
     DB.veiculos = DB.veiculos.filter(x => x.id !== id);
     softDeleteRow('veiculos', v);
     renderVeiculos();
-    toast('VeÃƒÂ­culo arquivado.');
+    toast('Veículo arquivado.');
   });
 }
 
 function toggleEmergencia(id) {
-  if (!ensureAllowed(canFavoriteRamais(), 'Seu perfil nÃƒÂ£o pode favoritar contatos.')) return;
+  if (!ensureAllowed(canFavoriteRamais(), 'Seu perfil não pode favoritar contatos.')) return;
   const r = DB.ramais.find(x => x.id === id);
   if (!r) return;
   r.emergencia = !r.emergencia;
   saveDB('ramais', r);
   renderRamais();
-  toast(r.emergencia ? 'Adicionado ÃƒÂ  emergÃƒÂªncia: ' + r.setor : 'Removido da emergÃƒÂªncia: ' + r.setor);
+  toast(r.emergencia ? 'Adicionado à emergência: ' + r.setor : 'Removido da emergência: ' + r.setor);
 }
 
 function renderRamais() {
@@ -2033,13 +2033,13 @@ function renderRamais() {
   const cont = document.getElementById('ramaisEmergencia');
   if (emrg.length) {
     cont.style.display = '';
-    cont.innerHTML = '<div class="emrg-head">Contatos de emergÃƒÂªncia</div><div class="emrg-grid">' +
+    cont.innerHTML = '<div class="emrg-head">Contatos de emergência</div><div class="emrg-grid">' +
       emrg.map(r => {
         const tel = (r.celular || '').replace(/[^0-9+]/g, '');
         return '<div class="emrg-card">' +
           '<div class="ec-setor">' + esc(r.setor) + '</div>' +
-          '<div class="ec-nome">' + esc(r.responsavel || 'Ã¢â‚¬â€') + '</div>' +
-          '<div class="ec-linha">Ramal <strong>' + esc(r.ramal || 'Ã¢â‚¬â€') + '</strong></div>' +
+          '<div class="ec-nome">' + esc(r.responsavel || '—') + '</div>' +
+          '<div class="ec-linha">Ramal <strong>' + esc(r.ramal || '—') + '</strong></div>' +
           (r.celular ? '<div class="ec-linha"><a href="tel:' + esc(tel) + '">' + esc(fmtCelular(r.celular)) + '</a></div>' : '') +
           '</div>';
       }).join('') + '</div>';
@@ -2054,7 +2054,7 @@ function renderRamais() {
   if (q) rows = rows.filter(r => norm(r.setor).includes(q) || norm(r.ramal).includes(q) || norm(r.responsavel).includes(q) || norm(r.celular).includes(q) || norm(r.email).includes(q));
   rows.sort((a, b) => ramalSort.dir * sortPt(a, b, ramalSort.col));
 
-  const ind = c => ramalSort.col === c ? ' <span class="sort-ind">' + (ramalSort.dir > 0 ? 'Ã¢â€“Â²' : 'Ã¢â€“Â¼') + '</span>' : '';
+  const ind = c => ramalSort.col === c ? ' <span class="sort-ind">' + (ramalSort.dir > 0 ? '▲' : '▼') + '</span>' : '';
   let html = '<colgroup>' +
     '<col style="width:32px">' +
     '<col style="width:18%">' +
@@ -2064,22 +2064,22 @@ function renderRamais() {
     '<col style="width:215px">' +
     (canManageRamais() ? '<col style="width:92px">' : '') +
     '</colgroup><thead><tr>' +
-    '<th title="EmergÃƒÂªncia"></th>' +
+    '<th title="Emergência"></th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'setor\')">Setor / Local' + ind('setor') + '</th>' +
     '<th class="th-sort" onclick="ordenarRamais(\'ramal\')">Ramal' + ind('ramal') + '</th>' +
-    '<th class="th-sort" onclick="ordenarRamais(\'responsavel\')">ResponsÃƒÂ¡vel' + ind('responsavel') + '</th>' +
+    '<th class="th-sort" onclick="ordenarRamais(\'responsavel\')">Responsável' + ind('responsavel') + '</th>' +
     '<th>Celular</th><th>E-mail</th>' + (canManageRamais() ? '<th></th>' : '') + '</tr></thead><tbody>';
   if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canManageRamais() ? 7 : 6) + '">Nenhum ramal encontrado.</td></tr>';
   rows.forEach(r => {
     const tel = (r.celular || '').replace(/[^0-9+]/g, '');
     html += '<tr class="' + (r.emergencia ? 'emrg-row' : '') + '">' +
       '<td>' + (canFavoriteRamais()
-        ? '<button class="star-btn' + (r.emergencia ? ' on' : '') + '" title="' + (r.emergencia ? 'Remover de emergÃƒÂªncia' : 'Marcar como contato de emergÃƒÂªncia') + '" onclick="toggleEmergencia(\'' + r.id + '\')">' + (r.emergencia ? 'Ã¢Ëœâ€¦' : 'Ã¢Ëœâ€ ') + '</button>'
-        : (r.emergencia ? 'Ã¢Ëœâ€¦' : '')) + '</td>' +
-      '<td><strong>' + esc(r.setor) + '</strong></td><td class="mono">' + esc(r.ramal || 'Ã¢â‚¬â€') + '</td>' +
-      '<td>' + esc(r.responsavel || 'Ã¢â‚¬â€') + '</td>' +
-      '<td class="mono">' + (r.celular ? '<a href="tel:' + esc(tel) + '">' + esc(fmtCelular(r.celular)) + '</a>' : 'Ã¢â‚¬â€') + '</td>' +
-      '<td>' + (r.email ? '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : 'Ã¢â‚¬â€') + '</td>' +
+        ? '<button class="star-btn' + (r.emergencia ? ' on' : '') + '" title="' + (r.emergencia ? 'Remover de emergência' : 'Marcar como contato de emergência') + '" onclick="toggleEmergencia(\'' + r.id + '\')">' + (r.emergencia ? '★' : '☆') + '</button>'
+        : (r.emergencia ? '★' : '')) + '</td>' +
+      '<td><strong>' + esc(r.setor) + '</strong></td><td class="mono">' + esc(r.ramal || '—') + '</td>' +
+      '<td>' + esc(r.responsavel || '—') + '</td>' +
+      '<td class="mono">' + (r.celular ? '<a href="tel:' + esc(tel) + '">' + esc(fmtCelular(r.celular)) + '</a>' : '—') + '</td>' +
+      '<td>' + (r.email ? '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : '—') + '</td>' +
       (canManageRamais() ? '<td class="actions">' + btnIcon('btn-ghost', 'Editar', 'abrirFormRamal(\'' + r.id + '\')', ICO.edit) + btnIcon('btn-danger', 'Excluir', 'excluirRamal(\'' + r.id + '\')', ICO.trash) + '</td>' : '') +
       '</tr>';
   });
@@ -2118,7 +2118,7 @@ function salvarRamal(id) {
 function excluirRamal(id) {
   if (!ensureAllowed(canManageRamais(), 'Somente Admin e Super Admin podem excluir ramais.')) return;
   const r = DB.ramais.find(x => x.id === id);
-  confirmar('Excluir o ramal de "' + r.setor + '"? O registro serÃƒÂ¡ arquivado para evitar perda de dados.', function () {
+  confirmar('Excluir o ramal de "' + r.setor + '"? O registro será arquivado para evitar perda de dados.', function () {
     DB.ramais = DB.ramais.filter(x => x.id !== id);
     softDeleteRow('ramais', r);
     renderRamais();
@@ -2136,14 +2136,14 @@ function renderEntregas() {
   let html = '<thead><tr>' +
     thSort('entregas', 'data', 'Data') + thSort('entregas', 'tipo', 'Tipo') + thSort('entregas', 'fornecedor', 'Fornecedor/Transp.') +
     thSort('entregas', 'nf', 'NF/Doc.') + thSort('entregas', 'descricao', 'Produtos') + thSort('entregas', 'volumes', 'Vol.') +
-    thSort('entregas', 'destinatario', 'DestinatÃƒÂ¡rio') + thSort('entregas', 'setor', 'Setor') + thSort('entregas', 'status', 'Status') +
+    thSort('entregas', 'destinatario', 'Destinatário') + thSort('entregas', 'setor', 'Setor') + thSort('entregas', 'status', 'Status') +
     (canWriteOperacao() ? '<th></th>' : '') + '</tr></thead><tbody>';
   if (!rows.length) html += '<tr class="empty-row"><td colspan="' + (canWriteOperacao() ? 10 : 9) + '">Nenhuma entrega encontrada.</td></tr>';
   rows.forEach(e => {
     html += '<tr><td class="mono">' + fmtDataHora(e.data) + '</td><td>' + badgeTipo(e.tipo) + '</td>' +
-      '<td><strong>' + esc(e.fornecedor) + '</strong></td><td class="mono">' + esc(e.nf || 'Ã¢â‚¬â€') + '</td>' +
-      '<td>' + esc(e.descricao || 'Ã¢â‚¬â€') + '</td><td class="mono">' + esc(e.volumes) + '</td>' +
-      '<td>' + esc(e.destinatario || 'Ã¢â‚¬â€') + '</td><td>' + esc(e.setor || 'Ã¢â‚¬â€') + '</td>' +
+      '<td><strong>' + esc(e.fornecedor) + '</strong></td><td class="mono">' + esc(e.nf || '—') + '</td>' +
+      '<td>' + esc(e.descricao || '—') + '</td><td class="mono">' + esc(e.volumes) + '</td>' +
+      '<td>' + esc(e.destinatario || '—') + '</td><td>' + esc(e.setor || '—') + '</td>' +
       '<td>' + badgeStatus(e.status) + '</td>' +
       (canWriteOperacao()
         ? '<td class="actions">' +
@@ -2156,11 +2156,11 @@ function renderEntregas() {
 }
 
 function salvarEntrega(id) {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nÃƒÂ£o pode salvar entregas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode salvar entregas.')) return;
   const fornecedor = document.getElementById('ce_fornecedor').value.trim();
   const destinatario = document.getElementById('ce_dest').value.trim();
   if (!fornecedor) { toast('Informe o fornecedor ou transportadora.', 'error'); return; }
-  if (!destinatario) { toast('Informe o destinatÃƒÂ¡rio interno.', 'error'); return; }
+  if (!destinatario) { toast('Informe o destinatário interno.', 'error'); return; }
   const dados = {
     tipo: document.getElementById('ce_tipo').value,
     fornecedor,
@@ -2191,7 +2191,7 @@ function salvarEntrega(id) {
 }
 
 function baixarEntrega(id) {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nÃƒÂ£o pode baixar entregas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode baixar entregas.')) return;
   const e = DB.entregas.find(x => x.id === id);
   if (!e) return;
   e.status = 'entregue';
@@ -2202,9 +2202,9 @@ function baixarEntrega(id) {
 }
 
 function excluirEntrega(id) {
-  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil nÃƒÂ£o pode excluir entregas.')) return;
+  if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode excluir entregas.')) return;
   const e = DB.entregas.find(x => x.id === id);
-  confirmar('Excluir a entrega de "' + e.fornecedor + '" (' + (e.nf || 'sem NF') + ')? O registro serÃƒÂ¡ arquivado para evitar perda de dados.', function () {
+  confirmar('Excluir a entrega de "' + e.fornecedor + '" (' + (e.nf || 'sem NF') + ')? O registro será arquivado para evitar perda de dados.', function () {
     DB.entregas = DB.entregas.filter(x => x.id !== id);
     softDeleteRow('entregas', e);
     renderEntregas();
@@ -2229,7 +2229,7 @@ function renderAll() {
 
 
 
-/* ---- expÃƒÂµe handlers usados em onclick inline ---- */
+/* ---- expõe handlers usados em onclick inline ---- */
 Object.assign(window, {
   abrirAreaUsuario,
   abrirAjudaCadastroUsuario,
