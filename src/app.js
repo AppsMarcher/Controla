@@ -557,8 +557,25 @@ function fotoField() {
           '<button type="button" class="btn btn-ghost btn-sm" onclick="capturarFotoWebcam()">Usar webcam</button>' +
           '<button type="button" class="btn btn-danger btn-sm" id="fotoRemover" onclick="removerFoto()" style="display:none">Remover</button>' +
         '</div>' +
-        '<div id="fotoWebcamActions" class="foto-actions"></div>' +
         '<div class="muted" style="font-size:.72rem">Clique na foto para enviar um arquivo (JPG ou PNG) — a imagem é reduzida automaticamente. Webcam quando disponível (HTTPS).</div>' +
+      '</div>' +
+    '</div>' +
+    '<div id="fotoWebcamPopover" class="foto-webcam-popover" style="display:none">' +
+      '<div class="foto-webcam-card">' +
+        '<div class="foto-webcam-head">' +
+          '<strong>Visualização da webcam</strong>' +
+          '<button type="button" class="btn btn-ghost btn-sm" onclick="pararWebcam()">Fechar</button>' +
+        '</div>' +
+        '<div class="foto-webcam-stage">' +
+          '<video id="fotoVideo" autoplay playsinline muted></video>' +
+        '</div>' +
+        '<div class="foto-webcam-foot">' +
+          '<div class="muted">Ajuste o enquadramento e capture quando a imagem estiver boa.</div>' +
+          '<div class="foto-actions">' +
+            '<button type="button" class="btn btn-primary btn-sm" onclick="tirarFotoWebcam()">Capturar</button>' +
+            '<button type="button" class="btn btn-ghost btn-sm" onclick="pararWebcam()">Cancelar</button>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
     '</div>' +
     '<input type="file" id="fotoInput" accept="image/*" style="display:none" onchange="carregarFoto(event)"></div>';
@@ -622,16 +639,17 @@ function capturarFotoWebcam() {
     toast('Webcam indisponível neste contexto (requer HTTPS ou localhost).', 'warn');
     return;
   }
-  const prev = document.getElementById('fotoPreview');
+  const pop = document.getElementById('fotoWebcamPopover');
+  const video = document.getElementById('fotoVideo');
+  if (!pop || !video) return;
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
     .then(function (stream) {
+      pararWebcam(true);
       _webcamStream = stream;
-      prev.innerHTML = '<video id="fotoVideo" autoplay playsinline muted></video>';
-      document.getElementById('fotoVideo').srcObject = stream;
-      const acts = document.getElementById('fotoWebcamActions');
-      acts.innerHTML =
-        '<button type="button" class="btn btn-primary btn-sm" onclick="tirarFotoWebcam()">Capturar</button>' +
-        '<button type="button" class="btn btn-ghost btn-sm" onclick="pararWebcam()">Cancelar</button>';
+      pop.style.display = 'block';
+      pop.classList.add('open');
+      video.srcObject = stream;
+      video.play().catch(() => {});
     })
     .catch(function () { toast('Não foi possível acessar a webcam.', 'error'); });
 }
@@ -649,8 +667,13 @@ function tirarFotoWebcam() {
 
 function pararWebcam(keepBuffer) {
   if (_webcamStream) { _webcamStream.getTracks().forEach(t => t.stop()); _webcamStream = null; }
-  const acts = document.getElementById('fotoWebcamActions');
-  if (acts) acts.innerHTML = '';
+  const video = document.getElementById('fotoVideo');
+  if (video) video.srcObject = null;
+  const pop = document.getElementById('fotoWebcamPopover');
+  if (pop) {
+    pop.classList.remove('open');
+    pop.style.display = 'none';
+  }
   if (!keepBuffer) setFotoPreview(fotoBuffer); // restaura o preview anterior
 }
 
