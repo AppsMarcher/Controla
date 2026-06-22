@@ -253,6 +253,16 @@ export async function resetUserPasswordRemote(id) {
   if (data?.error) throw new Error(data.error);
   return data || {};
 }
+
+export async function setUserPasswordRemote(id, password) {
+  if (!USE_SUPABASE) return;
+  const { data, error } = await supabase.functions.invoke('manage-user', {
+    body: { action: 'set_password', userId: id, password }
+  });
+  if (error) throw new Error('Falha ao definir nova senha: ' + error.message);
+  if (data?.error) throw new Error(data.error);
+  return data || {};
+}
 export async function deleteUserRemote(id) {
   if (!USE_SUPABASE) return;
   const { data, error } = await supabase.functions.invoke('manage-user', {
