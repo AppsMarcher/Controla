@@ -244,6 +244,15 @@ export async function updateUserStatusRemote(id, ativo) {
   return data || {};
 }
 
+export async function resetUserPasswordRemote(id) {
+  if (!USE_SUPABASE) return;
+  const { data, error } = await supabase.functions.invoke('manage-user', {
+    body: { action: 'reset_password', userId: id }
+  });
+  if (error) throw new Error('Falha ao enviar reset de senha: ' + error.message);
+  if (data?.error) throw new Error(data.error);
+  return data || {};
+}
 export async function deleteUserRemote(id) {
   if (!USE_SUPABASE) return;
   const { data, error } = await supabase.functions.invoke('manage-user', {
