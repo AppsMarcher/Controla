@@ -327,6 +327,7 @@ function showView(name) {
   if (sec) sec.classList.add('active');
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   document.getElementById('sidebar').classList.remove('open');
+  if (name === 'entrada') atualizarBannerPendente();
   if (name === 'usuarios') recarregarUsuarios();
   if (name === 'relatorios' && canManageUsers()) {
     carregarArquivados();
@@ -541,6 +542,45 @@ function direcionarCadastroPendente(pendencias, reg) {
   return false;
 }
 
+function atualizarBannerPendente() {
+  const banner = document.getElementById('entradaPendenteBanner');
+  if (!banner) return;
+  if (!ENTRADA_PENDENTE?.reg) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+  const p = ENTRADA_PENDENTE.reg;
+  banner.style.display = '';
+  banner.innerHTML =
+    '<div class="entrada-pendente-banner">' +
+    '<div class="epb-info">' +
+    '<span class="epb-icon">⚠</span>' +
+    '<div><strong>Cadastro pendente:</strong> ' + esc(p.nome) + ' (' + esc(p.documento) + ') — ' +
+    'complete o cadastro antes de registrar a entrada desta pessoa.' +
+    '</div></div>' +
+    '<div class="epb-actions">' +
+    '<button class="btn btn-primary btn-sm" onclick="retomarEntradaPendente()">Retomar cadastro</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="cancelarEntradaPendente()">Cancelar pendência</button>' +
+    '</div></div>';
+}
+
+function retomarEntradaPendente() {
+  if (!ENTRADA_PENDENTE?.reg) return;
+  const pendencias = obterPendenciasCadastroEntrada(ENTRADA_PENDENTE.reg);
+  if (pendencias.length) {
+    direcionarCadastroPendente(pendencias, ENTRADA_PENDENTE.reg);
+  } else {
+    retomarEntradaPendenteSePossivel();
+  }
+}
+
+function cancelarEntradaPendente() {
+  ENTRADA_PENDENTE = null;
+  atualizarBannerPendente();
+  toast('Pendência de cadastro cancelada.');
+}
+
 function registrarEntrada() {
   if (!ensureAllowed(canWriteOperacao(), 'Seu perfil não pode registrar entradas.')) return;
   const dadosEntrada = getEntradaFormData();
@@ -554,6 +594,15 @@ function registrarEntrada() {
     toast(validacaoDoc.msg, 'error');
     return;
   }
+
+  // Bloqueia se há cadastro pendente de outra pessoa
+  if (ENTRADA_PENDENTE?.reg &&
+      normalizeDocumento(ENTRADA_PENDENTE.reg.documento) !== normalizeDocumento(doc)) {
+    toast('Conclua ou cancele o cadastro pendente de ' + ENTRADA_PENDENTE.reg.nome + ' antes de registrar uma nova entrada.', 'warn');
+    atualizarBannerPendente();
+    return;
+  }
+
   const docNorm = normalizeDocumento(doc);
   const jaDentro = DB.acessos.find(a => a.status === 'Dentro' &&
     normalizeDocumento(a.documento) === docNorm);
@@ -562,7 +611,10 @@ function registrarEntrada() {
     return;
   }
   const pendenciasCadastro = obterPendenciasCadastroEntrada(dadosEntrada);
-  if (direcionarCadastroPendente(pendenciasCadastro, dadosEntrada)) return;
+  if (direcionarCadastroPendente(pendenciasCadastro, dadosEntrada)) {
+    atualizarBannerPendente();
+    return;
+  }
 
   const reg = {
     id: uid(),
@@ -574,6 +626,7 @@ function registrarEntrada() {
   DB.acessos.push(reg);
   saveDB('acessos', reg);
   ENTRADA_PENDENTE = null;
+  atualizarBannerPendente();
   limparFormEntrada();
   toast('Entrada registrada: ' + reg.nome);
   showView('dashboard');
@@ -2467,6 +2520,8 @@ Object.assign(window, {
   trocarWebcamSelecionada,
   registrarEntrada,
   registrarSaida,
+  retomarEntradaPendente,
+  cancelarEntradaPendente,
   removerFoto,
   renderEntregas,
   renderHistorico,
