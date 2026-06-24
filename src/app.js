@@ -781,10 +781,26 @@ function pararWebcam(keepBuffer) {
 
 /* Miniatura para as listagens (foto ou inicial do nome). */
 function fotoThumb(foto, nome) {
-  if (foto) return '<span class="thumb"><img src="' + foto + '" alt=""></span>';
+  if (foto) return '<span class="thumb thumb-click" onclick="abrirFotoPopover(\'' + esc(foto) + '\',\'' + esc(nome) + '\')" title="Ver foto de ' + esc(nome) + '"><img src="' + foto + '" alt=""></span>';
   const ini = String(nome || '?').trim().charAt(0).toUpperCase() || '?';
   return '<span class="thumb thumb-ph">' + esc(ini) + '</span>';
 }
+
+function abrirFotoPopover(src, nome) {
+  let ov = document.getElementById('fotoPopoverOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'fotoPopoverOverlay';
+    ov.innerHTML = '<div id="fotoPopoverBox"><img id="fotoPopoverImg" alt=""><div id="fotoPopoverNome"></div></div>';
+    ov.addEventListener('click', () => ov.classList.remove('open'));
+    document.body.appendChild(ov);
+  }
+  document.getElementById('fotoPopoverImg').src = src;
+  document.getElementById('fotoPopoverNome').textContent = nome || '';
+  ov.classList.add('open');
+}
+
+Object.assign(window, { abrirFotoPopover });
 
 /* ============================================================
    CRUD — VISITANTES
