@@ -374,11 +374,76 @@ function renderDashboard() {
   let html = '<thead><tr><th>Hora</th><th>Tipo</th><th>Nome</th><th>Empresa</th><th>Placa</th><th>Status</th></tr></thead><tbody>';
   if (!rows.length) html += '<tr class="empty-row"><td colspan="6">Nenhum registro hoje. Use "Registrar Entrada" para começar.</td></tr>';
   rows.forEach(a => {
-    html += '<tr><td class="mono">' + fmtHora(a.entrada) + '</td><td>' + badgeTipo(a.tipo) + '</td><td><strong>' + esc(a.nome) + '</strong></td><td>' +
+    const clicavel = (a.tipo === 'visitante' || a.tipo === 'motorista' || a.tipo === 'prestador');
+    const nomeCell = clicavel
+      ? '<button class="dash-nome-btn" onclick="abrirPopoverCadastro(\'' + esc(a.tipo) + '\',\'' + esc(a.documento) + '\')">' + esc(a.nome) + '</button>'
+      : '<strong>' + esc(a.nome) + '</strong>';
+    html += '<tr><td class="mono">' + fmtHora(a.entrada) + '</td><td>' + badgeTipo(a.tipo) + '</td><td>' + nomeCell + '</td><td>' +
       esc(a.empresa || '—') + '</td><td class="mono">' + esc(a.placa || '—') + '</td><td>' + badgeStatus(a.status) + '</td></tr>';
   });
   document.getElementById('dashTable').innerHTML = html + '</tbody>';
 }
+
+function abrirPopoverCadastro(tipo, documento) {
+  const tabela = (tipo === 'motorista') ? 'motoristas' : 'visitantes';
+  const reg = DB[tabela].find(x => normalizeDocumento(x.documento) === normalizeDocumento(documento));
+
+  let ov = document.getElementById('cadastroPopoverOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'cadastroPopoverOverlay';
+    ov.innerHTML = '<div id="cadastroPopoverBox" onclick="event.stopPropagation()"></div>';
+    ov.addEventListener('click', fecharPopoverCadastro);
+    document.body.appendChild(ov);
+  }
+
+  const box = document.getElementById('cadastroPopoverBox');
+
+  if (!reg) {
+    box.innerHTML =
+      '<div class="cpop-header"><span class="cpop-title">Cadastro não encontrado</span></div>' +
+      '<div class="cpop-body"><p class="muted">Este acesso foi registrado sem cadastro prévio.</p></div>' +
+      '<div class="cpop-foot"><button class="btn btn-ghost" onclick="fecharPopoverCadastro()">Fechar</button></div>';
+    ov.classList.add('open');
+    return;
+  }
+
+  const foto = reg.foto
+    ? '<img src="' + reg.foto + '" alt="" class="cpop-foto">'
+    : '<div class="cpop-foto cpop-foto-ph">' + esc(String(reg.nome || '?').charAt(0).toUpperCase()) + '</div>';
+
+  const linhas = [
+    ['Documento', reg.documento],
+    ['Telefone', reg.telefone || '—'],
+    ['Empresa', (tabela === 'motoristas' ? reg.transportadora : reg.empresa) || '—'],
+    tabela === 'motoristas' ? ['Placa padrão', reg.placaPadrao || '—'] : null,
+    ['Status', reg.ativo !== false ? 'Ativo' : 'Inativo'],
+    reg.obs ? ['Obs.', reg.obs] : null
+  ].filter(Boolean);
+
+  const editFn = tabela === 'motoristas'
+    ? 'fecharPopoverCadastro();abrirFormMotorista(\'' + reg.id + '\')'
+    : 'fecharPopoverCadastro();abrirFormVisitante(\'' + reg.id + '\')';
+
+  box.innerHTML =
+    '<div class="cpop-header">' + foto + '<span class="cpop-title">' + esc(reg.nome) + '</span></div>' +
+    '<div class="cpop-body">' +
+    linhas.map(([k, v]) => '<div class="cpop-linha"><span class="cpop-key">' + esc(k) + '</span><span class="cpop-val">' + esc(v) + '</span></div>').join('') +
+    '</div>' +
+    '<div class="cpop-foot">' +
+    (canWriteCadastros() ? '<button class="btn btn-primary" onclick="' + editFn + '">Editar</button>' : '') +
+    '<button class="btn btn-ghost" onclick="fecharPopoverCadastro()">Fechar</button>' +
+    '</div>';
+
+  ov.classList.add('open');
+}
+
+function fecharPopoverCadastro() {
+  const ov = document.getElementById('cadastroPopoverOverlay');
+  if (ov) ov.classList.remove('open');
+}
+
+Object.assign(window, { abrirPopoverCadastro, fecharPopoverCadastro });
 
 /* ============================================================
    ENTRADA

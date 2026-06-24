@@ -268,6 +268,20 @@ tr.emrg-row:hover td{background:#F6CED3}
 #fotoPopoverBox{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:90vw;max-height:90vh}
 #fotoPopoverImg{width:360px;height:360px;object-fit:cover;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 #fotoPopoverNome{color:#fff;font-weight:600;font-size:1rem;letter-spacing:.01em}
+/* Popover de cadastro no dashboard */
+.dash-nome-btn{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--vermelho);cursor:pointer;text-align:left}.dash-nome-btn:hover{text-decoration:underline}
+#cadastroPopoverOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center}
+#cadastroPopoverOverlay.open{display:flex}
+#cadastroPopoverBox{background:#fff;border-radius:14px;width:360px;max-width:92vw;box-shadow:0 8px 40px rgba(0,0,0,.28);overflow:hidden}
+.cpop-header{display:flex;align-items:center;gap:14px;padding:20px 20px 14px}
+.cpop-foto{width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.cpop-foto-ph{width:64px;height:64px;border-radius:50%;background:var(--cinza-bg);border:2px solid var(--cinza);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:var(--cinza-badge);flex-shrink:0}
+.cpop-title{font-size:1.1rem;font-weight:700;color:var(--texto)}
+.cpop-body{padding:0 20px 10px;display:flex;flex-direction:column;gap:6px}
+.cpop-linha{display:flex;gap:8px;font-size:.88rem}
+.cpop-key{color:var(--cinza-badge);min-width:90px;flex-shrink:0}
+.cpop-val{color:var(--texto);font-weight:500}
+.cpop-foot{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--cinza-bg)}
 
 /* ---------- Badges ---------- */
 .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
