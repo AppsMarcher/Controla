@@ -1193,6 +1193,44 @@ function renderHistorico() {
       '<td>' + esc(a.visitado || '—') + '</td><td>' + badgeStatus(a.status) + '</td></tr>';
   });
   document.getElementById('histTable').innerHTML = html + '</tbody>';
+  initFloatingScrollbar(document.getElementById('histTableWrap'));
+}
+
+let _floatingHScrollCleanup = null;
+function initFloatingScrollbar(wrap) {
+  if (_floatingHScrollCleanup) { _floatingHScrollCleanup(); _floatingHScrollCleanup = null; }
+  if (!wrap) return;
+  const track = document.createElement('div');
+  track.className = 'floating-hscroll';
+  const inner = document.createElement('div');
+  inner.className = 'floating-hscroll-inner';
+  track.appendChild(inner);
+  document.body.appendChild(track);
+  let syncing = false, visible = false;
+  function updateGeometry() {
+    const hasOverflow = wrap.scrollWidth > wrap.clientWidth;
+    track.style.display = (visible && hasOverflow) ? 'block' : 'none';
+    if (!visible || !hasOverflow) return;
+    const rect = wrap.getBoundingClientRect();
+    track.style.left = rect.left + 'px';
+    track.style.width = rect.width + 'px';
+    inner.style.width = wrap.scrollWidth + 'px';
+    track.scrollLeft = wrap.scrollLeft;
+  }
+  function onWrapScroll() { if (!syncing) { syncing = true; track.scrollLeft = wrap.scrollLeft; syncing = false; } }
+  function onTrackScroll() { if (!syncing) { syncing = true; wrap.scrollLeft = track.scrollLeft; syncing = false; } }
+  wrap.addEventListener('scroll', onWrapScroll);
+  track.addEventListener('scroll', onTrackScroll);
+  const ro = new ResizeObserver(updateGeometry);
+  ro.observe(wrap);
+  const io = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; updateGeometry(); });
+  io.observe(wrap);
+  updateGeometry();
+  _floatingHScrollCleanup = () => {
+    wrap.removeEventListener('scroll', onWrapScroll);
+    track.removeEventListener('scroll', onTrackScroll);
+    ro.disconnect(); io.disconnect(); track.remove();
+  };
 }
 
 function limparFiltrosHistorico() {

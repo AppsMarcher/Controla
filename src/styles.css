@@ -165,6 +165,12 @@ th{
 td{padding:9px 10px;border-bottom:1px solid var(--cinza-bg);vertical-align:middle}
 #histTable td{padding:6px 8px;font-size:.78rem;white-space:nowrap}
 #histTable th{padding:6px 8px;font-size:.65rem}
+.floating-hscroll{position:fixed;bottom:0;z-index:100;overflow-x:auto;overflow-y:hidden;height:10px;display:none;scrollbar-width:thin;scrollbar-color:var(--cinza) transparent}
+.floating-hscroll-inner{height:1px}
+.floating-hscroll::-webkit-scrollbar{height:6px}
+.floating-hscroll::-webkit-scrollbar-track{background:transparent}
+.floating-hscroll::-webkit-scrollbar-thumb{background:var(--cinza);border-radius:3px}
+.floating-hscroll::-webkit-scrollbar-thumb:hover{background:var(--cinza-badge)}
 tr:hover td{background:#FAFAF8}
 .empty-row td{text-align:center;color:#8A8B83;padding:24px}
 .th-sort{cursor:pointer;user-select:none;white-space:nowrap}
