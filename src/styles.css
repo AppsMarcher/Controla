@@ -163,6 +163,8 @@ th{
   border-bottom:2px solid var(--cinza);white-space:nowrap;
 }
 td{padding:9px 10px;border-bottom:1px solid var(--cinza-bg);vertical-align:middle}
+#histTable td{padding:6px 8px;font-size:.78rem;white-space:nowrap}
+#histTable th{padding:6px 8px;font-size:.65rem}
 tr:hover td{background:#FAFAF8}
 .empty-row td{text-align:center;color:#8A8B83;padding:24px}
 .th-sort{cursor:pointer;user-select:none;white-space:nowrap}
